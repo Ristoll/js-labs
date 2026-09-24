@@ -74,7 +74,7 @@ const STAR_PALETTE = [
  * - Medium glowing spectral orbs
  * - Bright stars with 4-point optical diffraction spikes
  */
-const STARS = Array.from({ length: 220 }, (_, i) => {
+const STARS = Array.from({ length: 220 }, () => {
   const rx = rng(); // Guaranteed uniform [0, 1) across X
   const ry = rng(); // Guaranteed uniform [0, 1) across Y
 
@@ -121,9 +121,24 @@ export function drawBackground(ctx, width, height, timeMs = 0) {
 
   // 2. Cosmic nebulae / space dust clouds for depth and atmosphere
   const nebulae = [
-    { x: width * 0.22, y: height * 0.28, r: Math.max(width, height) * 0.35, col: 'rgba(99, 102, 241, 0.055)' },
-    { x: width * 0.78, y: height * 0.72, r: Math.max(width, height) * 0.38, col: 'rgba(14, 165, 233, 0.045)' },
-    { x: width * 0.52, y: height * 0.85, r: Math.max(width, height) * 0.3, col: 'rgba(168, 85, 247, 0.04)' },
+    {
+      x: width * 0.22,
+      y: height * 0.28,
+      r: Math.max(width, height) * 0.35,
+      col: 'rgba(99, 102, 241, 0.055)',
+    },
+    {
+      x: width * 0.78,
+      y: height * 0.72,
+      r: Math.max(width, height) * 0.38,
+      col: 'rgba(14, 165, 233, 0.045)',
+    },
+    {
+      x: width * 0.52,
+      y: height * 0.85,
+      r: Math.max(width, height) * 0.3,
+      col: 'rgba(168, 85, 247, 0.04)',
+    },
   ];
 
   for (const neb of nebulae) {
@@ -363,16 +378,25 @@ export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena
  * Compatible with all browser Canvas implementations.
  */
 export function drawHud(ctx, stats) {
-  const { stepsPerSecond = 0, framesPerSecond = 0, lastFrameDuration = 0 } = stats || {};
+  const {
+    stepsPerSecond = 0,
+    framesPerSecond = 0,
+    lastFrameDuration = 0,
+    delta = lastFrameDuration,
+    frame = 0,
+    tick = 0,
+    jitter = 0,
+    mode = 'fixed (60 Hz)',
+  } = stats || {};
 
   ctx.save();
   const hudX = 16;
   const hudY = 16;
-  const boxWidth = 210;
-  const boxHeight = 90;
+  const boxWidth = 224;
+  const boxHeight = 172;
 
   // Background panel
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
   ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
   ctx.lineWidth = 1;
   ctx.fillRect(hudX, hudY, boxWidth, boxHeight);
@@ -383,32 +407,51 @@ export function drawHud(ctx, stats) {
   ctx.fillStyle = '#94a3b8';
   ctx.fillText('DOGFIGHT // TELEMETRY', hudX + 12, hudY + 20);
 
-  // Metrics
-  ctx.font = '500 13px ui-monospace, Consolas, monospace';
+  // Subtle header divider
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+  ctx.beginPath();
+  ctx.moveTo(hudX + 12, hudY + 26);
+  ctx.lineTo(hudX + boxWidth - 12, hudY + 26);
+  ctx.stroke();
 
-  // Steps / s
-  ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('steps/s:  ', hudX + 12, hudY + 42);
-  ctx.fillStyle = stepsPerSecond >= 58 && stepsPerSecond <= 62 ? '#4ade80' : '#facc15';
-  ctx.font = '700 14px ui-monospace, Consolas, monospace';
-  ctx.fillText(`${stepsPerSecond}`, hudX + 105, hudY + 42);
+  // Metrics list
+  const startY = hudY + 44;
+  const lineH = 17;
+  const valX = hudX + 90;
 
-  // Frames / s
-  ctx.font = '500 13px ui-monospace, Consolas, monospace';
-  ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('frames/s: ', hudX + 12, hudY + 62);
-  ctx.fillStyle = '#38bdf8';
-  ctx.font = '700 14px ui-monospace, Consolas, monospace';
-  ctx.fillText(`${framesPerSecond}`, hudX + 105, hudY + 62);
+  const rows = [
+    { label: 'mode: ', val: mode, col: '#38bdf8' },
+    { label: 'frame:', val: `${frame}`, col: '#cbd5e1' },
+    { label: 'tick: ', val: `${tick}`, col: '#cbd5e1' },
+    {
+      label: 'steps/s:',
+      val: `${stepsPerSecond}`,
+      col: stepsPerSecond >= 58 && stepsPerSecond <= 62 ? '#4ade80' : '#facc15',
+    },
+    { label: 'fps:   ', val: `${framesPerSecond}`, col: '#38bdf8' },
+    {
+      label: 'delta: ',
+      val: `${delta.toFixed(1)} ms`,
+      col: delta > 25 ? '#f87171' : '#e2e8f0',
+    },
+    {
+      label: 'jitter:',
+      val: `${jitter.toFixed(2)} ms`,
+      col: jitter > 4 ? '#facc15' : '#a7f3d0',
+    },
+  ];
 
-  // Frame Duration
-  ctx.font = '500 13px ui-monospace, Consolas, monospace';
-  ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('frame ms: ', hudX + 12, hudY + 82);
-  const ms = lastFrameDuration.toFixed(1);
-  ctx.fillStyle = lastFrameDuration > 30 ? '#f87171' : '#e2e8f0';
-  ctx.font = '700 14px ui-monospace, Consolas, monospace';
-  ctx.fillText(`${ms} ms`, hudX + 105, hudY + 82);
+  ctx.font = '500 12px ui-monospace, Consolas, monospace';
+  rows.forEach((row, idx) => {
+    const y = startY + idx * lineH;
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(row.label, hudX + 12, y);
+
+    ctx.fillStyle = row.col;
+    ctx.font = '700 12px ui-monospace, Consolas, monospace';
+    ctx.fillText(row.val, valX, y);
+    ctx.font = '500 12px ui-monospace, Consolas, monospace';
+  });
 
   ctx.restore();
 }

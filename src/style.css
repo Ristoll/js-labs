@@ -58,3 +58,54 @@ kbd {
   border-radius: 4px;
   color: #f1f5f9;
 }
+
+#experiment-buttons {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 6px;
+  padding: 5px 8px;
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+
+.exp-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-right: 2px;
+}
+
+.exp-btn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #38bdf8;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.exp-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.exp-btn:active {
+  transform: scale(0.95);
+}

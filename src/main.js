@@ -4,6 +4,7 @@ import { createShip, integrate } from './sim/ship.js';
 import { createArena, wrapAround } from './sim/arena.js';
 import { setupCanvas } from './render/canvas.js';
 import { drawBackground, drawShip, drawHud } from './render/draw.js';
+import { toggleExperiment1, toggleExperiment2, toggleExperiment3 } from './experiments.js';
 
 // 1. Setup Canvas and Viewport
 const canvasElement = document.getElementById('game-canvas');
@@ -56,3 +57,12 @@ const loop = createLoop({
 
 // Start the game loop
 loop.start();
+
+// Milestone 4 Experiments (Results printed in Console)
+const btn1 = document.getElementById('btn-exp-1');
+const btn2 = document.getElementById('btn-exp-2');
+const btn3 = document.getElementById('btn-exp-3');
+
+btn1?.addEventListener('click', () => toggleExperiment1(loop, btn1));
+btn2?.addEventListener('click', () => toggleExperiment2(loop, btn2));
+btn3?.addEventListener('click', () => toggleExperiment3(loop, btn3));

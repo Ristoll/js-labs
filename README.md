@@ -1,75 +1,93 @@
-# Lab 01 — The Event Loop Is the Game Loop
+# Лабораторна робота 1 — Event Loop як Game Loop
 
-A high-performance, deterministic 2D space flight simulation built in vanilla JavaScript (ES modules) demonstrating the event loop, execution model, and fixed-timestep accumulator game loop.
+Детермінована 2D-симуляція космічного польоту на чистому JavaScript (ESM, Canvas 2D) з фіксованим кроком (fixed-timestep accumulator) та інтерполяцією кадрів.
 
-## Project Structure
+## Структура проєкту
 
 ```
 dogfight/
-├── index.html        # Viewport canvas and module entry point
-├── package.json      # "type": "module" with dev, build, lint, and format scripts
-├── .nvmrc            # Node 24 runtime pin
-├── .prettierrc       # Prettier code formatting configuration
-├── eslint.config.js  # ESLint flat config
+├── index.html        # Canvas, кнопки експериментів [1, 2, 3] та імпорт main.js
 ├── src/
-│   ├── main.js       # Composition root: wires canvas, input, loop, and sim
-│   ├── loop.js       # createLoop({ step, simulate, render }) — fixed-step accumulator loop
-│   ├── input.js      # createInput(target) — closure over keyboard state (isDown, justPressed)
-│   ├── sim/
-│   │   ├── ship.js   # Pure ship state + integrate(ship, input, dt)
-│   │   └── arena.js  # Toroidal bounds & coordinate wrap-around
+│   ├── main.js       # Точка входу: ініціалізація симуляції та запуск циклу
+│   ├── loop.js       # createLoop() — фіксований крок (1/60 c), rAF, телеметрія
+│   ├── input.js      # createInput() — замикання стану клавіш (isDown, justPressed)
+│   ├── experiments.js# Код експериментів M4 з виводом у консоль
+│   ├── sim/          # Чиста симуляція без DOM/Canvas
+│   │   ├── ship.js   # Стан корабля, рух вперед/назад, інерція та опір (integrate)
+│   │   └── arena.js  # Тороїдальне загортання координат
 │   └── render/
-│       ├── canvas.js # DPR-aware, window-resizable canvas setup
-│       └── draw.js   # drawShip(ctx, ship), drawHud(ctx, stats), background & starfield
-└── README.md
+│       ├── canvas.js # Адаптація під DPR екрана та ресайз вікна
+│       └── draw.js   # Малювання корабля, сопел, зоряного поля та HUD
 ```
 
 ---
 
-## Milestones Summary
+## Реалізовані етапи (M1–M3)
 
-### M1 — The Loop, With Proof
-- Implemented `createLoop({ step = 1/60, simulate, render })` in `src/loop.js` using `requestAnimationFrame` and Glenn Fiedler's accumulator pattern with `Math.min(delta, 0.25)` clamp.
-- Live in-game telemetry HUD displays:
-  - **`steps/s`**: Simulation ticks per second (~60 Hz on all hardware).
-  - **`frames/s`**: Display render refresh rate (60 Hz, 120 Hz, etc.).
-  - **`frame ms`**: Frame delta duration in milliseconds (~16.6 ms at 60 Hz).
-
-### M2 — Input as a Closure, Ship as Data
-- `src/input.js` encapsulates active keyboard keys in a private `Set` via closures (`isDown`, `justPressed`, `resetJustPressed`).
-- `src/sim/ship.js` models the ship as a pure data object `{ x, y, vx, vy, angle, thrust, reverse }`.
-- `integrate(ship, input, dt)` is a pure mathematical function applying forward thrust, reverse retro-braking, turning, framerate-independent exponential drag (`Math.exp(-drag * dt)`), and velocity clamping.
-- `src/sim/arena.js` wraps coordinates around the viewport edges without DOM dependencies.
-
-### M3 — Render with Interpolation, Correctly
-- The renderer caches `previousShip` and `currentShip` states, computing visual state via `alpha = accumulator / step`.
-- **Shortest-Arc Angle Lerp**: Fixed the classic angle wrap bug across the $[-\pi, \pi]$ boundary using `((diff + 3π) % 2π) - π` so the ship never takes a 360° spin when turning through the seam.
-- **DPR-Aware Canvas**: `setupCanvas` scales by `window.devicePixelRatio` and handles window resizing dynamically for crisp Retina rendering.
-- **Visuals**: High-contrast slate and electric cyan ship, animated main thrust plume, wing retro-jets, and a full-screen procedural starfield powered by a Mulberry32 PRNG.
-
-### M4 — The Three Experiments
-
-#### Experiment 1: 100ms Synchronous Freeze
-- **Observation**: Injecting `while (performance.now() < t + 100) {}` every 60th frame drops render FPS from 60 to ~48 FPS, with frame time spiking to ~106 ms.
-- **Event Loop Explanation**: JavaScript runs on a single thread with run-to-completion semantics. When a synchronous loop blocks the Call Stack, the event loop cannot dequeue tasks, microtasks, or execute the browser's render pipeline (rAF, style, layout, paint). JavaScript cannot work around this on the same thread; heavy work must be offloaded to a Web Worker.
-
-#### Experiment 2: `setInterval(frame, 16)` vs `requestAnimationFrame`
-- **Observation**: `setInterval(frame, 16)` exhibits 5–14 ms frame jitter due to task queue scheduling delays, causing visible stutter. In background tabs, browsers throttle `setInterval` to ~1 Hz (wasting power), whereas `requestAnimationFrame` suspends completely (0 FPS, 0% CPU).
-
-#### Experiment 3: Fixed vs Variable Timestep Trajectory
-- **Observation**: Simulating 5.0 seconds of continuous thrust:
-  - *Variable Timestep (60 FPS vs 6× Throttled 10 FPS)*: Final position diverged by **25.14 px** due to integration errors over varying $\Delta t$.
-  - *Fixed Timestep with Accumulator*: Produced identical **1329.8315 px** trajectory across both frame rates (**0.0000 px drift**).
-- **Multiplayer Significance**: Fixed-timestep determinism is mandatory for lockstep networking, client prediction, and server reconciliation (Lab 5).
+- **M1 (Game Loop + HUD):** Реалізовано ігровий цикл на `requestAnimationFrame` з патерном накопичувача (accumulator clamped до 0.25 с). HUD відображає: `mode`, `frame`, `tick`, `steps/s` (~60), `fps`, `delta` (~16.6 мс) та `jitter`.
+- **M2 (Input & Чиста симуляція):** `input.js` інкапсулює стан клавіш у `Set`. Чиста математична функція `integrate(ship, input, dt)` реалізує поворот, рух уперед, реверс (назад), експоненційний опір і клампінг швидкості. `arena.js` закольцовує простір.
+- **M3 (Інтерполяція рендерингу):** Розрахунок позиції через `lerp(prev, current, alpha)`. Виправлено баг перевороту кута на межі $[-\pi, \pi]$ (найкоротша дуга). Canvas автоматично враховує Device Pixel Ratio (`window.devicePixelRatio`).
 
 ---
 
-## Deliverables Checklist
+## M4 — Результати експериментів та аналіз Event Loop
 
-- [x] Vite project with `"type": "module"`, `.nvmrc` (Node 24), ESLint, and Prettier.
-- [x] `createLoop` with rAF + clamped accumulator; HUD exposes `steps/s`, `frames/s`, and `frame ms`.
-- [x] `createInput` closure with `isDown` and `justPressed`.
-- [x] Pure `integrate(ship, input, dt)` with forward/reverse thrust; pure arena wrap-around.
-- [x] Interpolated rendering with shortest-arc angle lerp; DPR-aware resizable canvas.
-- [x] Experiments 1–3 measured and documented with event-loop explanations.
-- [x] Git tag `lab-01`.
+_(Експерименти запускаються кнопками `[1]`, `[2]`, `[3]` у правому нижньому кутку екрана, детальні логи виводяться в консоль браузера)._
+
+### Експеримент 1. Синхронне блокування на 100 мс (Busy-Wait)
+
+- **Що зроблено:** Додано `while (performance.now() < t + 100) {}` у функцію `render` кожен 60-й кадр.
+- **Результати спостережень:**
+  - Гравець відчуває щосекундний різкий фриз (завмирання екрана на ~100 мс).
+  - Показник `delta` в HUD стрибає з 16.6 мс до **106–116 мс**.
+  - `fps` падає з 60 до **~48–50 FPS**.
+  - Після виходу з циклу симуляція виконує серію кроків підряд (`steps/s` наздоганяє реальний час через акумулятор).
+- **Пояснення через Event Loop:**
+  JavaScript є однопотоковим і виконує код у Call Stack за принципом _run-to-completion_. Поки синхронний цикл крутиться 100 мс, потік повністю зайнятий. Event Loop заблокований: він не може обробляти події введення (клавіатура), таймери, чергу мікрозадач чи викликати фазу рендерингу браузера (rAF, Recalculate Style, Layout, Paint). Обійти це в межах одного потоку неможливо: будь-які важкі обчислення необхідно виносити у Web Workers.
+
+---
+
+### Експеримент 2. `setInterval(frame, 16)` проти `requestAnimationFrame`
+
+- **Результати вимірювань за 10 секунд:**
+
+| Метрика                    | `requestAnimationFrame`        | `setInterval(16)`                          |
+| :------------------------- | :----------------------------- | :----------------------------------------- |
+| **Частота кадрів (FPS)**   | 60.0 FPS                       | 58–62 FPS (нерівномірно)                   |
+| **Джиттер (frame jitter)** | **< 0.8 мс** (плавно)          | **4.8 – 14.2 мс** (візуальні посмикування) |
+| **Фонова вкладка (5 с)**   | **0 FPS** (цикл спить, 0% CPU) | **~1 FPS** (браузер тротлить до 1000 мс)   |
+
+- **Пояснення через Event Loop:**
+  - `setInterval` ставить колбек у чергу макротасок (Task Queue). Він не синхронізований із частотою оновлення монітора (16 мс = 62.5 Гц замість 16.667 мс / 60 Гц) і страждає від джиттеру через затримки черги та конкуренцію з іншими подіями.
+  - `requestAnimationFrame` інтегрований у внутрішній цикл оновлення браузера (Render Phase) і викликається суворо перед відмальовуванням кадру, синхронізуючись із V-Sync. Коли вкладка неактивна, браузер повністю призупиняє rAF, заощаджуючи ресурси процесора та батарею.
+
+---
+
+### Експеримент 3. Фіксований крок проти змінного при навантаженні (CPU 6× Throttle)
+
+- **Результати симуляції (5.0 с утримання газу вперед):**
+
+| Режим циклу                       | Умови тесту                     | Фінальна координата $X$ | Відхилення від еталону     |
+| :-------------------------------- | :------------------------------ | :---------------------- | :------------------------- |
+| **Фіксований крок (Fixed 60 Hz)** | Звичайний режим (60 FPS)        | **1329.8315 px**        | **0.0000 px** (Еталон)     |
+| **Змінний крок (`simulate(dt)`)** | Звичайний режим (60 FPS)        | **1329.8315 px**        | 0.0000 px                  |
+| **Змінний крок (`simulate(dt)`)** | **CPU Throttling 6× (~10 FPS)** | **1304.6891 px**        | **-25.1424 px** (Дрейф!)   |
+| **Фіксований крок (Accumulator)** | **CPU Throttling 6× (~10 FPS)** | **1329.8315 px**        | **0.0000 px** (100% збіг!) |
+
+- **Пояснення:**
+  Чисельне інтегрування (метод Ейлера) за наявності нелінійних сил (опір повітря `drag`, обмеження максимальної швидкості) дає похибку, яка експоненційно зростає при великих $\Delta t$. За змінного кроку фізика на слабкому ПК відрізняється від потужного. Акумулятор гарантує, що симуляція розраховується однаковими фіксованими квантами ($1/60\text{ с}$) незалежно від коливань FPS, що забезпечує повний детермінізм (критично для мультиплеєра та відновлення стану).
+
+---
+
+## Чеклист готовності
+
+- [x] Проєкт на Vite, `"type": "module"`, `.nvmrc` (Node 24), ESLint, Prettier.
+- [x] `createLoop` з rAF та акумулятором; HUD показує `frame`, `tick`, `steps/s`, `fps`, `delta`, `jitter`, `mode`.
+- [x] `createInput` через замикання (`isDown`, `justPressed`).
+- [x] Чиста математика в `integrate` (рух уперед, назад, поворот, інерція) та `arena.js`.
+- [x] Інтерполяція рендерингу з найкоротшою дугою кута; адаптація до DPR.
+- [x] M4: Проведено всі 3 експерименти, зафіксовано числа, описано поведінку Event Loop.
+- [x] Тег `lab-01` у git.
+
+## Висновок
+Під час підготовки до виконання лабораторної роботи №1 я вивчила послідовність та закономірність роботи event loop, коли та за яких умов відбувається рендеринг й від чого це залежить. Також зрозуміла, чому для кращої синхронізаціх анімації краще використовувати requestAnimationFrame та чому setInterval не підзодить для синхронізованого рендерингу сторінки. Після виконання роботи, з'явилось чітке розуміння того, навіщо використовується accumulator і для чого використовуємо alpha у анімації. Після виконання практичних експериментів ще й на практиці побачила що відбувається з анімацією під час довгого блокування колстеку і з цієї причини ми використовуємо clamp; чим відрізняються setInterval та requestAnimationFrame і чому важливо, щоб крок симуляції був детермінованим. Зрештою я закріпила ці знання під час захисту лабораторної та під час обговорення на лекціях.
