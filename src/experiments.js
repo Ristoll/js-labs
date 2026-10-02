@@ -1,22 +1,12 @@
 /**
  * Lab 01 — Milestone 4 Experiments
  *
- * Implements the three exact required experiments:
+ * Implements the three required experiments:
  *
- * 1. Put a while (performance.now() < t + 100) {} busy-wait in render every 60th frame.
- *    Describe what the player sees and what the HUD numbers do. Remove it.
- *    Explain, with the event loop, why a 100 ms synchronous block can never be "worked around" from JavaScript on the same thread.
- *
- * 2. Replace requestAnimationFrame with setInterval(frame, 16).
- *    Record frames/s and the frame-time jitter for 10 s. Switch to a background tab for 5 s and back.
- *    Restore rAF. Report what differed.
- *
- * 3. Remove the accumulator (variable timestep: simulate(dt) once per frame).
- *    Throttle the CPU 6× in DevTools. Show that the ship's trajectory now differs between throttled and unthrottled runs
- *    (log the position after 5 s of holding "thrust"). Restore the fixed step; show the positions now match.
+ * 1. 100ms Synchronous Freeze every 60th frame.
+ * 2. setInterval(frame, 16) vs requestAnimationFrame for 10s.
+ * 3. Fixed Timestep vs Variable Timestep Trajectory Determinism (Baseline vs Throttled).
  */
-
-import { createShip, integrate } from './sim/ship.js';
 
 let intervalExpTimer = null;
 
@@ -44,9 +34,9 @@ export function toggleExperiment1(loop, buttonElement) {
       'color: #f87171; font-weight: bold;'
     );
     console.log(
-      '%c1. What the player sees: Periodic jarring stutter / freeze every ~1 second.\n' +
-        '2. What the HUD numbers do: `delta` spikes to 100-116 ms every 60 frames. `fps` drops from 60 to ~48-50. `steps/s` catches up in bursts.\n' +
-        '3. To remove: Click button [1] again.',
+      '%c1. Що бачить гравець: різкі фризи / затинання щосекунди.\n' +
+        '2. Що роблять показники HUD: delta підскакує до 100-116 мс кожні 60 кадрів; fps падає з 60 до ~48-50.\n' +
+        '3. Щоб вимкнути: натисніть кнопку [1] ще раз.',
       'color: #e2e8f0; line-height: 1.4;'
     );
   } else {
@@ -56,19 +46,15 @@ export function toggleExperiment1(loop, buttonElement) {
       buttonElement.style.color = '';
     }
     console.log(
-      '%c[REMOVED] 100ms busy-wait removed. Smooth 60 FPS restored.',
+      '%c[REMOVED] 100ms busy-wait прибрано. Плавні 60 FPS відновлено.',
       'color: #4ade80; font-weight: bold;'
     );
     console.log(
-      '%c[Event Loop Explanation]\n' +
-        'JavaScript executes on a single main thread with run-to-completion semantics.\n' +
-        'While `while (performance.now() < t + 100) {}` runs on the Call Stack:\n' +
-        ' - Nothing can interrupt or preempt it — the stack is completely occupied for 100 ms.\n' +
-        ' - The Event Loop cannot process the Task Queue (keyboard inputs, click events, timers).\n' +
-        ' - The browser cannot process the Microtask Queue.\n' +
-        ' - The browser cannot run its rendering pipeline (rAF callbacks, style, layout, paint).\n' +
-        'Therefore, on the same thread, no JavaScript abstraction (Promise, setTimeout, rAF) can bypass or work around\n' +
-        'a 100ms synchronous block. Heavy operations must be offloaded to Web Workers on separate threads.',
+      '%c[Event Loop Пояснення]\n' +
+        'JavaScript виконується в одному головному потоці (Call Stack) за принципом run-to-completion.\n' +
+        'Поки виконується синхронний цикл `while (...)`: жоден інший код не може перервати його.\n' +
+        'Event loop заблокований: він не може обробити Task Queue (клавіатура, таймери) та фазу Render браузера (rAF, style, layout, paint).\n' +
+        'Обійти це в тому самому потоці неможливо — важкі обчислення слід виносити у Web Workers.',
       'color: #94a3b8; line-height: 1.4;'
     );
   }
@@ -83,7 +69,6 @@ export function toggleExperiment2(loop, buttonElement) {
   const isCurrentlyActive = loop.isUseSetInterval();
 
   if (isCurrentlyActive) {
-    // Manually stop before 10s
     if (intervalExpTimer) {
       clearTimeout(intervalExpTimer);
       intervalExpTimer = null;
@@ -92,7 +77,6 @@ export function toggleExperiment2(loop, buttonElement) {
     return;
   }
 
-  // Activate setInterval(frame, 16)
   loop.setUseSetInterval(true);
   if (buttonElement) {
     buttonElement.style.background = 'rgba(234, 179, 8, 0.4)';
@@ -105,9 +89,9 @@ export function toggleExperiment2(loop, buttonElement) {
     'color: #38bdf8; font-weight: bold;'
   );
   console.log(
-    '%c[ACTIVE] Replaced requestAnimationFrame with setInterval(frame, 16).\n' +
-      'Recording frames/s and jitter for 10 seconds...\n' +
-      '-> TIP: Switch to a background tab for 5 seconds and come back to observe background throttling!',
+    '%c[ACTIVE] Замінено requestAnimationFrame на setInterval(frame, 16).\n' +
+      'Запис FPS та jitter протягом 10 секунд...\n' +
+      '-> ПІДКАЗКА: Перемкніться на фонову вкладку на 5 секунд і поверніться для спостереження тротлінгу таймерів!',
     'color: #facc15; font-weight: bold; line-height: 1.4;'
   );
 
@@ -126,7 +110,6 @@ export function toggleExperiment2(loop, buttonElement) {
     });
   }, 500);
 
-  // Run for 10 seconds, then restore rAF
   intervalExpTimer = setTimeout(() => {
     clearInterval(sampleInterval);
     restoreRaf(loop, buttonElement, samples);
@@ -144,52 +127,51 @@ function restoreRaf(loop, buttonElement, samples) {
   }
 
   console.group(
-    '%c=== EXPERIMENT 2: 10-Second Report & rAF Restored ===',
+    '%c=== EXPERIMENT 2: Звіт за 10 секунд & Відновлення rAF ===',
     'color: #38bdf8; font-weight: bold;'
   );
   console.log(
-    '%c[RESTORED] requestAnimationFrame has been restored.',
+    '%c[RESTORED] requestAnimationFrame відновлено.',
     'color: #4ade80; font-weight: bold;'
   );
 
   if (samples.length > 0) {
-    console.log('%cRecorded Samples during setInterval(16):', 'color: #cbd5e1;');
+    console.log('%cЗразки вимірювань під час setInterval(16):', 'color: #cbd5e1;');
     console.table(samples);
   }
 
   console.table([
     {
-      Feature: 'Display Refresh Synchronization',
-      'requestAnimationFrame (rAF)': 'Synchronized with hardware V-Sync (60Hz / 120Hz)',
-      'setInterval(frame, 16)': 'Unaligned timer (1000/16 = 62.5Hz mismatch vs 60Hz screen)',
+      'Ознака': 'Синхронізація з монітором',
+      'requestAnimationFrame (rAF)': 'Синхронізовано з V-Sync дисплея (60Hz / 120Hz)',
+      'setInterval(frame, 16)': 'Незбіг таймера (1000/16 = 62.5Hz проти 60Hz екрана)',
     },
     {
-      Feature: 'Frame-Time Jitter',
-      'requestAnimationFrame (rAF)': '< 0.8 ms (stable, tear-free animation)',
-      'setInterval(frame, 16)': '4.8 – 14.2 ms (drifts behind task queue delays)',
+      'Ознака': 'Джиттер часу кадру (jitter)',
+      'requestAnimationFrame (rAF)': '< 0.8 ms (плавна анімація без розривів)',
+      'setInterval(frame, 16)': '4.8 – 14.2 ms (плаває через чергу макротасок)',
     },
     {
-      Feature: 'Background Tab Behavior (5s test)',
-      'requestAnimationFrame (rAF)': 'Completely suspended (0 FPS, 0% CPU/GPU waste)',
-      'setInterval(frame, 16)': 'Throttled to ~1000ms (~1 FPS), keeps firing and wasting power',
+      'Ознака': 'Поведінка у фоновій вкладці',
+      'requestAnimationFrame (rAF)': 'Повністю призупиняється (0 FPS, 0% CPU)',
+      'setInterval(frame, 16)': 'Тротлиться до ~1000ms (~1 FPS), витрачає енергію',
     },
     {
-      Feature: 'Where in Event Loop',
-      'requestAnimationFrame (rAF)': 'Dedicated rendering step before style, layout, & paint',
-      'setInterval(frame, 16)': 'Macrotask Queue (subject to timer clamping & task delays)',
+      'Ознака': 'Місце в Event Loop',
+      'requestAnimationFrame (rAF)': 'Окрема Render Phase безпосередньо перед Paint',
+      'setInterval(frame, 16)': 'Task Queue (макротаска з чергою та затримками)',
     },
   ]);
 
-  console.log(
-    '%cReport: setInterval drifts because 16ms != 16.667ms, and macrotasks suffer queue latency.\n' +
-      'rAF aligns directly with the display refresh and pauses when hidden, eliminating stutter and saving battery.',
-    'color: #94a3b8; line-height: 1.4;'
-  );
   console.groupEnd();
 }
 
+let baselineResult = null;
+let throttledResult = null;
+let isExp3Running = false;
+
 /**
- * Experiment 3: Fixed Timestep vs Variable Timestep Trajectory Determinism
+ * Experiment 3: Toggle Fixed-Timestep (60Hz) vs Variable Timestep mode
  */
 export function toggleExperiment3(loop, buttonElement) {
   const isCurrentlyVariable = loop.isVariableTimestep();
@@ -198,10 +180,12 @@ export function toggleExperiment3(loop, buttonElement) {
 
   if (buttonElement) {
     if (nextState) {
+      buttonElement.textContent = '3: Var';
       buttonElement.style.background = 'rgba(239, 68, 68, 0.4)';
       buttonElement.style.borderColor = '#ef4444';
       buttonElement.style.color = '#fca5a5';
     } else {
+      buttonElement.textContent = '3: Fix';
       buttonElement.style.background = '';
       buttonElement.style.borderColor = '';
       buttonElement.style.color = '';
@@ -209,112 +193,345 @@ export function toggleExperiment3(loop, buttonElement) {
   }
 
   console.group(
-    '%c=== EXPERIMENT 3: Fixed vs Variable Timestep Determinism ===',
+    '%c=== EXPERIMENT 3: Режим ігрового циклу змінено ===',
     'color: #38bdf8; font-weight: bold;'
   );
 
   if (nextState) {
     console.log(
-      '%c[ACTIVE] Accumulator REMOVED. Running in Variable Timestep mode: `simulate(dt)` once per frame.',
+      '%c[ACTIVE] Акумулятор ВИМКНЕНО. Режим Variable Timestep: `simulate(dt)` викликається один раз на кадр.',
       'color: #f87171; font-weight: bold;'
     );
     console.log(
-      '%c-> Open DevTools (F12) -> Performance -> CPU Throttling (6x slowdown) to feel the physics instability!\n' +
-        '-> Click button [3] again to restore the fixed step accumulator.',
-      'color: #facc15;'
+      '%cПорядок перевірки:\n' +
+        '1. Натисніть [Base] для 5-секундного вимірювання без тротлінгу.\n' +
+        '2. Увімкніть у DevTools (F12) -> Performance -> CPU: 6x slowdown.\n' +
+        '3. Натисніть [Throt] для 5-секундного вимірювання під навантаженням -> подивіться на дрейф траєкторії!',
+      'color: #facc15; line-height: 1.5;'
     );
   } else {
     console.log(
-      '%c[RESTORED] Fixed-timestep accumulator RESTORED (step = 1/60s). Fully deterministic.',
+      '%c[RESTORED] Акумулятор ВІДНОВЛЕНО (step = 1/60s). Режим Fixed Timestep 60 Hz.',
       'color: #4ade80; font-weight: bold;'
+    );
+    console.log(
+      '%cПорядок перевірки:\n' +
+        '1. Вимкніть тротлінг у DevTools -> натисніть [Base] (300 кроків по 1/60с).\n' +
+        '2. Увімкніть CPU 6x slowdown -> натисніть [Throt] (300 кроків по 1/60с під лагами).\n' +
+        '3. Порівняйте: фінальна координата X буде однаковою (0.0000 px drift)!',
+      'color: #a7f3d0; line-height: 1.5;'
     );
   }
 
-  // Run the benchmark: 5.0 seconds of holding forward thrust
-  const forwardInput = { isDown: (code) => code === 'ArrowUp' || code === 'KeyW' };
+  console.groupEnd();
+}
 
-  // 1. Fixed Timestep 60Hz (300 steps of 1/60s = 5.0s)
-  let sFixed = createShip({ x: 0, y: 0, vx: 0, vy: 0, angle: 0 });
-  const fixedStep = 1 / 60;
-  for (let i = 0; i < 300; i++) {
-    sFixed = integrate(sFixed, forwardInput, fixedStep);
+/**
+ * Runs a real live flight measurement on the active game loop using requestAnimationFrame.
+ */
+export function runExperiment3Measurement({
+  loop,
+  buttonElement,
+  isThrottled,
+  testControls,
+  onComplete,
+}) {
+  if (isExp3Running) {
+    console.warn('[EXP 3] Вимірювання вже триває. Будь ласка, зачекайте завершення.');
+    return;
   }
 
-  // 2. Variable Timestep at 60 FPS (dt = 5.0 / 300 = 0.01667s)
-  let sVar60 = createShip({ x: 0, y: 0, vx: 0, vy: 0, angle: 0 });
-  const dt60 = 5.0 / 300;
-  for (let i = 0; i < 300; i++) {
-    sVar60 = integrate(sVar60, forwardInput, dt60);
+  isExp3Running = true;
+  const isFixed = !loop.isVariableTimestep();
+  const testName = isThrottled ? 'THROTTLED (CPU 6x)' : 'BASELINE (Unthrottled)';
+  const modeName = isFixed ? 'Fixed Timestep (60 Hz)' : 'Variable Timestep';
+
+  // Target criteria for fair comparison:
+  // - Fixed Timestep: exactly 300 physics steps (300 * 1/60s = 5.000s simulation time)
+  // - Variable Timestep: 5.000s of simulation time (sum of real frame dt)
+  const targetSteps = isFixed ? 300 : Infinity;
+  const targetSimTime = isFixed ? Infinity : 5.0;
+
+  console.group(
+    `%c=== EXPERIMENT 3: Живе вимірювання польоту [${testName}] ===`,
+    'color: #38bdf8; font-weight: bold;'
+  );
+  console.log(
+    `%c[START] Запуск польоту в режимі: %c${modeName}`,
+    'color: #cbd5e1;',
+    'color: #38bdf8; font-weight: bold;'
+  );
+  console.log(
+    isFixed
+      ? '%cЦіль: рівно 300 physics steps з фіксованим кроком dt = 1/60 с (= 5.000 с часу симуляції).'
+      : '%cЦіль: 5.000 с часу симуляції з оновленням фізики на кожному кадрі з реальним dt.',
+    'color: #94a3b8;'
+  );
+
+  const originalText = buttonElement ? buttonElement.textContent : '';
+  if (buttonElement) {
+    buttonElement.style.background = isThrottled
+      ? 'rgba(239, 68, 68, 0.45)'
+      : 'rgba(56, 189, 248, 0.35)';
+    buttonElement.style.borderColor = isThrottled ? '#ef4444' : '#38bdf8';
+    buttonElement.style.color = '#ffffff';
   }
 
-  // 3. Variable Timestep under 6x CPU Throttling (10 FPS, dt = 0.10s, 50 frames)
-  let sVarThrottled = createShip({ x: 0, y: 0, vx: 0, vy: 0, angle: 0 });
-  const dtThrottled = 0.1;
-  for (let i = 0; i < 50; i++) {
-    sVarThrottled = integrate(sVarThrottled, forwardInput, dtThrottled);
-  }
+  // 1. Reset loop accumulator to ensure clean start without partial frame remnants
+  loop.resetAccumulator();
 
-  // 4. Fixed Timestep under 6x CPU Throttling (10 FPS render, accumulator catching up in 1/60s steps)
-  let sFixedThrottled = createShip({ x: 0, y: 0, vx: 0, vy: 0, angle: 0 });
-  let accum = 0;
-  for (let f = 0; f < 50; f++) {
-    accum += 0.1;
-    while (accum >= fixedStep) {
-      sFixedThrottled = integrate(sFixedThrottled, forwardInput, fixedStep);
-      accum -= fixedStep;
+  // 2. Reset ship to pristine identical starting state and activate test thrust
+  testControls.startTest({ targetSteps, targetSimTime });
+
+  const frameDts = [];
+  let startTime = 0;
+  let frameCount = 0;
+
+  function finishTest(endTime) {
+    // Stop frame listener and status display
+    loop.setOnFrame(null);
+    loop.setCustomMode(null);
+    testControls.stopTest();
+    isExp3Running = false;
+
+    if (buttonElement) {
+      buttonElement.textContent = originalText;
+      buttonElement.style.background = '';
+      buttonElement.style.borderColor = '';
+      buttonElement.style.color = '';
     }
+
+    const realWallSec = (endTime - startTime) / 1000;
+    const finalShipData = testControls.getShipData();
+    const physicsSteps = finalShipData.physicsSteps;
+    const simTimeSec = finalShipData.simTime;
+    const finalX = finalShipData.unwrappedX;
+
+    const avgFps = realWallSec > 0 ? frameCount / realWallSec : 0;
+    const dtSumMs = frameDts.reduce((acc, dt) => acc + dt, 0) * 1000;
+    const avgFrameDtMs = frameCount > 0 ? dtSumMs / frameCount : 0;
+    const minFrameDtMs = frameDts.length > 0 ? Math.min(...frameDts) * 1000 : 0;
+    const maxFrameDtMs = frameDts.length > 0 ? Math.max(...frameDts) * 1000 : 0;
+
+    const result = {
+      name: testName,
+      isThrottled,
+      isFixed,
+      mode: modeName,
+      wallDurationSec: realWallSec,
+      frameCount,
+      physicsSteps,
+      avgFps,
+      avgFrameDtMs,
+      minFrameDtMs,
+      maxFrameDtMs,
+      simTimeSec,
+      finalX,
+    };
+
+    if (isThrottled) {
+      throttledResult = result;
+    } else {
+      baselineResult = result;
+    }
+
+    console.log(
+      `%c[COMPLETE] Політ завершено! Фактично виміряні показники:`,
+      'color: #4ade80; font-weight: bold;'
+    );
+    console.table([
+      {
+        Параметр: 'Тестовий запуск',
+        Значення: result.name,
+      },
+      {
+        Параметр: 'Режим ігрового циклу',
+        Значення: result.mode,
+      },
+      {
+        Параметр: 'Реальна тривалість (wall-clock)',
+        Значення: `${result.wallDurationSec.toFixed(3)} с`,
+      },
+      {
+        Параметр: 'Кількість кадрів (render)',
+        Значення: `${result.frameCount} frames`,
+      },
+      {
+        Параметр: 'Physics steps (updates)',
+        Значення: `${result.physicsSteps} steps`,
+      },
+      {
+        Параметр: 'Середній FPS',
+        Значення: `${result.avgFps.toFixed(2)} FPS`,
+      },
+      {
+        Параметр: 'Середній frame dt',
+        Значення: `${result.avgFrameDtMs.toFixed(2)} мс (min: ${result.minFrameDtMs.toFixed(1)} мс, max: ${result.maxFrameDtMs.toFixed(1)} мс)`,
+      },
+      {
+        Параметр: 'Simulation time (пройдено)',
+        Значення: `${result.simTimeSec.toFixed(4)} с`,
+      },
+      {
+        Параметр: 'Фінальна позиція X',
+        Значення: `${result.finalX.toFixed(4)} px`,
+      },
+    ]);
+
+    if (baselineResult && throttledResult) {
+      printComparisonReport(baselineResult, throttledResult);
+    } else if (!isThrottled) {
+      console.log(
+        '%c-> [НАСТУПНИЙ КРОК]\n' +
+          '1. BASELINE збережено!\n' +
+          '2. Відкрийте DevTools (F12) -> Performance -> CPU: 6x slowdown.\n' +
+          '3. Натисніть кнопку [Throt], щоб провести вимірювання під навантаженням та отримати звіт порівняння!',
+        'color: #facc15; font-weight: bold; line-height: 1.5;'
+      );
+    }
+
+    console.groupEnd();
+    if (onComplete) onComplete(result);
   }
 
-  const driftError = Math.abs(sVarThrottled.x - sFixed.x);
-  const fixedError = Math.abs(sFixedThrottled.x - sFixed.x);
+  // Hook executes strictly AFTER the physics update & render of each frame
+  loop.setOnFrame(({ dt, timestamp }) => {
+    if (startTime === 0) {
+      startTime = timestamp;
+      return;
+    }
+
+    const elapsedWallSec = (timestamp - startTime) / 1000;
+    frameCount++;
+    frameDts.push(dt);
+
+    const shipData = testControls.getShipData();
+
+    // Visual feedback countdown
+    let progressLabel = '';
+    if (isFixed) {
+      progressLabel = `${shipData.physicsSteps}/300 steps`;
+      if (buttonElement) {
+        buttonElement.textContent = `${isThrottled ? 'Throt' : 'Base'} (${shipData.physicsSteps})`;
+      }
+    } else {
+      const remainingSec = Math.max(0, 5.0 - shipData.simTime);
+      progressLabel = `${remainingSec.toFixed(1)}s`;
+      if (buttonElement) {
+        buttonElement.textContent = `${isThrottled ? 'Throt' : 'Base'} (${remainingSec.toFixed(0)}s)`;
+      }
+    }
+    loop.setCustomMode(`measuring (${progressLabel})`);
+
+    // Strictly evaluated AFTER physics of this frame has run:
+    const isComplete = isFixed
+      ? shipData.physicsSteps >= 300 || elapsedWallSec >= 6.5
+      : shipData.simTime >= 5.0 || elapsedWallSec >= 5.5;
+
+    if (isComplete) {
+      finishTest(timestamp);
+    }
+  });
+}
+
+function printComparisonReport(base, throt) {
+  const driftPx = Math.abs(throt.finalX - base.finalX);
+  const isVariable = !base.isFixed || !throt.isFixed;
+  const stepsDiff = throt.physicsSteps - base.physicsSteps;
+
+  console.group(
+    '%c=== EXPERIMENT 3: ПОРІВНЯННЯ РЕАЛЬНИХ ДАНИХ (Baseline vs Throttled) ===',
+    'color: #38bdf8; font-weight: bold;'
+  );
 
   console.table([
     {
-      Run: '1. Fixed 60Hz (Baseline)',
-      'Final X (px)': sFixed.x.toFixed(4),
-      'Final Vx (px/s)': sFixed.vx.toFixed(4),
-      'Drift vs Baseline': '0.0000 px',
-      Status: 'BASELINE',
+      'Метрика': 'Режим',
+      'BASELINE': base.mode,
+      'THROTTLED': throt.mode,
+      'Різниця': isVariable ? 'Variable Mode' : 'Fixed Mode',
     },
     {
-      Run: '2. Variable Step (60 FPS unthrottled)',
-      'Final X (px)': sVar60.x.toFixed(4),
-      'Final Vx (px/s)': sVar60.vx.toFixed(4),
-      'Drift vs Baseline': Math.abs(sVar60.x - sFixed.x).toFixed(4) + ' px',
-      Status: 'OK (Identical dt)',
+      'Метрика': 'Реальна тривалість (wall-clock)',
+      'BASELINE': `${base.wallDurationSec.toFixed(3)} с`,
+      'THROTTLED': `${throt.wallDurationSec.toFixed(3)} с`,
+      'Різниця': `${throt.wallDurationSec >= base.wallDurationSec ? '+' : ''}${(throt.wallDurationSec - base.wallDurationSec).toFixed(3)} с`,
     },
     {
-      Run: '3. Variable Step (6x Throttled, 10 FPS)',
-      'Final X (px)': sVarThrottled.x.toFixed(4),
-      'Final Vx (px/s)': sVarThrottled.vx.toFixed(4),
-      'Drift vs Baseline': driftError.toFixed(4) + ' px',
-      Status: 'DIVERGED (FATAL)',
+      'Метрика': 'Кількість кадрів (render)',
+      'BASELINE': `${base.frameCount}`,
+      'THROTTLED': `${throt.frameCount}`,
+      'Різниця': `${throt.frameCount - base.frameCount} frames`,
     },
     {
-      Run: '4. Fixed Step (6x Throttled + Accumulator)',
-      'Final X (px)': sFixedThrottled.x.toFixed(4),
-      'Final Vx (px/s)': sFixedThrottled.vx.toFixed(4),
-      'Drift vs Baseline': fixedError.toFixed(4) + ' px',
-      Status: '100% DETERMINISTIC',
+      'Метрика': 'Physics steps (updates)',
+      'BASELINE': `${base.physicsSteps}`,
+      'THROTTLED': `${throt.physicsSteps}`,
+      'Різниця': `${stepsDiff === 0 ? '0 (ІДЕНТИЧНО)' : `${stepsDiff > 0 ? `+${stepsDiff}` : stepsDiff} steps`}`,
+    },
+    {
+      'Метрика': 'Середній FPS',
+      'BASELINE': `${base.avgFps.toFixed(1)} FPS`,
+      'THROTTLED': `${throt.avgFps.toFixed(1)} FPS`,
+      'Різниця': `${(throt.avgFps - base.avgFps).toFixed(1)} FPS`,
+    },
+    {
+      'Метрика': 'Середній frame dt',
+      'BASELINE': `${base.avgFrameDtMs.toFixed(2)} мс`,
+      'THROTTLED': `${throt.avgFrameDtMs.toFixed(2)} мс`,
+      'Різниця': `+${(throt.avgFrameDtMs - base.avgFrameDtMs).toFixed(2)} мс`,
+    },
+    {
+      'Метрика': 'Simulation time',
+      'BASELINE': `${base.simTimeSec.toFixed(4)} с`,
+      'THROTTLED': `${throt.simTimeSec.toFixed(4)} с`,
+      'Різниця': `${(throt.simTimeSec - base.simTimeSec).toFixed(4)} с`,
+    },
+    {
+      'Метрика': 'Фінальна X',
+      'BASELINE': `${base.finalX.toFixed(4)} px`,
+      'THROTTLED': `${throt.finalX.toFixed(4)} px`,
+      'Різниця': `${(throt.finalX - base.finalX).toFixed(4)} px`,
+    },
+    {
+      'Метрика': 'Drift X',
+      'BASELINE': '0.0000 px (Base)',
+      'THROTTLED': `${driftPx.toFixed(4)} px`,
+      'Різниця': `${driftPx.toFixed(4)} px (DRIFT)`,
     },
   ]);
 
-  console.log(
-    `%c[Result] Variable timestep diverged by ${driftError.toFixed(4)} px after 5s of thrust under throttling!`,
-    'color: #f87171; font-weight: bold;'
-  );
-  console.log(
-    `%c[Result] Fixed step accumulator error: ${fixedError.toFixed(4)} px. Trajectories match 100%!`,
-    'color: #4ade80; font-weight: bold;'
-  );
-  console.log(
-    '%c[Multiplayer Significance]\n' +
-      'In Euler physics with drag and velocity clamping, integrating over larger dt chunks alters\n' +
-      'the numerical trajectory curve. In multiplayer (Lab 5), variable timesteps cause clients\n' +
-      'to desynchronize, produce inconsistent collisions, and break client-side prediction.\n' +
-      'The fixed-timestep accumulator guarantees identical numerical physics on all machines.',
-    'color: #94a3b8; line-height: 1.4;'
-  );
+  if (isVariable) {
+    console.log(
+      `%c[ВИСНОВОК: ДРЕЙФ ПРИ ЗМІННОМУ КРОЦІ]\n` +
+        `Фактичний дрейф траєкторії склав ${driftPx.toFixed(4)} px!\n` +
+        `Пояснення: При змінному кроці (simulate(dt)) кожен кадр отримує довільний dt від браузера.\n` +
+        `Чисельне інтегрування за методом Ейлера з урахуванням експоненційного опору (drag) та обмеження швидкості ` +
+        `накопичує різну математичну похибку при різному dt.\n` +
+        `У мультиплеєрі це призводить до десинхронізації клієнтів (desync) та розбіжностей передбачення (prediction).`,
+      'color: #f87171; font-weight: bold; line-height: 1.5;'
+    );
+  } else {
+    if (driftPx < 0.0001) {
+      console.log(
+        `%c[ВИСНОВОК: ДЕТЕРМІНІЗМ ПІДТВЕРДЖЕНО]\n` +
+          `Фактичний дрейф: ${driftPx.toFixed(4)} px (0.0000 px!).\n` +
+          `Обидва запуски виконали рівно ${throt.physicsSteps} physics steps з постійним dt = 1/60 с.\n` +
+          `Це доводить, що завдяки патерну акумулятора (accumulator pattern) результат фізичної симуляції ` +
+          `повністю не залежить від render FPS та коливань швидкодії пристрою.`,
+        'color: #4ade80; font-weight: bold; line-height: 1.5;'
+      );
+    } else {
+      console.log(
+        `%c[ВИСНОВОК: ВИЯВЛЕНО ДРЕЙФ ТРАЄКТОРІЇ]\n` +
+          `Дрейф між BASELINE та THROTTLED склав ${driftPx.toFixed(4)} px.\n` +
+          `Причина розбіжності: різна кількість physics steps (${base.physicsSteps} у Baseline проти ${throt.physicsSteps} у Throttled).\n` +
+          `Різниця у ${Math.abs(stepsDiff)} кроків призвела до різниці в кінцевій позиції. ` +
+          `Для перевірки детермінізму фізики порівнюйте координати після строго однакової кількості physics steps.`,
+        'color: #facc15; font-weight: bold; line-height: 1.5;'
+      );
+    }
+  }
 
   console.groupEnd();
 }

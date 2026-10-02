@@ -17,7 +17,9 @@
       <span class="exp-label">EXP:</span>
       <button id="btn-exp-1" class="exp-btn" title="Run Experiment 1: 100ms Synchronous Freeze">1</button>
       <button id="btn-exp-2" class="exp-btn" title="Run Experiment 2: setInterval vs rAF">2</button>
-      <button id="btn-exp-3" class="exp-btn" title="Run Experiment 3: Fixed vs Variable Timestep Trajectory">3</button>
+      <button id="btn-exp-3" class="exp-btn" title="Exp 3: Toggle Fixed (60Hz) / Variable Timestep mode">3: Fix</button>
+      <button id="btn-exp-3-base" class="exp-btn" title="Exp 3: Run Baseline (Unthrottled measurement)">Base</button>
+      <button id="btn-exp-3-throttle" class="exp-btn" title="Exp 3: Run Throttled (Measure under CPU 6x in DevTools)">Throt</button>
     </div>
 
     <script type="module" src="/src/main.js"></script>
