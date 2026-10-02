@@ -160,9 +160,13 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
   }
 
   function getStats() {
+    const timeSinceLastFrame = last > 0 ? performance.now() - last : 0;
+    const currentFps = timeSinceLastFrame > 1200 ? 0 : framesPerSecond;
+    const currentSteps = timeSinceLastFrame > 1200 ? 0 : stepsPerSecond;
+
     return {
-      stepsPerSecond,
-      framesPerSecond,
+      stepsPerSecond: currentSteps,
+      framesPerSecond: currentFps,
       lastFrameDuration,
       delta: lastFrameDuration,
       frame: totalFrames,

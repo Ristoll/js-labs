@@ -92,9 +92,7 @@ const loop = createLoop({
     previousShip = ship;
 
     const shouldTestThrust =
-      testThrustActive &&
-      testPhysicsSteps < testTargetSteps &&
-      testSimTime < testTargetSimTime;
+      testThrustActive && testPhysicsSteps < testTargetSteps && testSimTime < testTargetSimTime;
 
     // During automated live testing, inject dedicated forward thrust
     const activeInput = shouldTestThrust

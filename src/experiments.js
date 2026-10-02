@@ -8,7 +8,6 @@
  * 3. Fixed Timestep vs Variable Timestep Trajectory Determinism (Baseline vs Throttled).
  */
 
-let intervalExpTimer = null;
 
 /**
  * Experiment 1: 100ms Synchronous Freeze every 60th frame
@@ -62,107 +61,230 @@ export function toggleExperiment1(loop, buttonElement) {
   console.groupEnd();
 }
 
+let exp2State = {
+  running: false,
+  sampleTimer: null,
+};
+
 /**
  * Experiment 2: setInterval(frame, 16) vs requestAnimationFrame
+ * Records 10 seconds for rAF and 10 seconds for setInterval(16),
+ * measuring active vs background/inactive tab behavior.
  */
 export function toggleExperiment2(loop, buttonElement) {
-  const isCurrentlyActive = loop.isUseSetInterval();
-
-  if (isCurrentlyActive) {
-    if (intervalExpTimer) {
-      clearTimeout(intervalExpTimer);
-      intervalExpTimer = null;
+  if (exp2State.running) {
+    if (exp2State.sampleTimer) {
+      clearInterval(exp2State.sampleTimer);
+      exp2State.sampleTimer = null;
     }
-    restoreRaf(loop, buttonElement, []);
+    exp2State.running = false;
+    loop.setUseSetInterval(false);
+    loop.setCustomMode(null);
+
+    if (buttonElement) {
+      buttonElement.textContent = '2';
+      buttonElement.style.background = '';
+      buttonElement.style.borderColor = '';
+      buttonElement.style.color = '';
+    }
+
+    console.log(
+      '%c[СКАСОВАНО] Експеримент 2 зупинено. requestAnimationFrame відновлено.',
+      'color: #f87171; font-weight: bold;'
+    );
     return;
   }
 
-  loop.setUseSetInterval(true);
-  if (buttonElement) {
-    buttonElement.style.background = 'rgba(234, 179, 8, 0.4)';
-    buttonElement.style.borderColor = '#eab308';
-    buttonElement.style.color = '#fef08a';
-  }
+  exp2State.running = true;
 
   console.group(
-    '%c=== EXPERIMENT 2: setInterval(frame, 16) vs requestAnimationFrame ===',
+    '%c=== EXPERIMENT 2: requestAnimationFrame проти setInterval(frame, 16) ===',
     'color: #38bdf8; font-weight: bold;'
   );
   console.log(
-    '%c[ACTIVE] Замінено requestAnimationFrame на setInterval(frame, 16).\n' +
-      'Запис FPS та jitter протягом 10 секунд...\n' +
-      '-> ПІДКАЗКА: Перемкніться на фонову вкладку на 5 секунд і поверніться для спостереження тротлінгу таймерів!',
-    'color: #facc15; font-weight: bold; line-height: 1.4;'
+    '%c[ПОЧАТОК] Експеримент складається з двох етапів по 10 секунд для порівняння.\n' +
+      'В обох етапах перемкніться на іншу вкладку на ~5 секунд і поверніться назад, щоб перевірити поведінку неактивної сторінки!',
+    'color: #cbd5e1; line-height: 1.5;'
   );
 
-  const samples = [];
-  const sampleInterval = setInterval(() => {
-    if (!loop.isUseSetInterval()) {
-      clearInterval(sampleInterval);
-      return;
-    }
-    const stats = loop.getStats();
-    samples.push({
-      time: (samples.length * 0.5).toFixed(1) + 's',
-      fps: stats.framesPerSecond,
-      delta: stats.delta.toFixed(1) + ' ms',
-      jitter: stats.jitter.toFixed(2) + ' ms',
-    });
-  }, 500);
-
-  intervalExpTimer = setTimeout(() => {
-    clearInterval(sampleInterval);
-    restoreRaf(loop, buttonElement, samples);
-  }, 10000);
-
-  console.groupEnd();
-}
-
-function restoreRaf(loop, buttonElement, samples) {
+  // --- ЕТАП 1: requestAnimationFrame (10 секунд) ---
   loop.setUseSetInterval(false);
   if (buttonElement) {
-    buttonElement.style.background = '';
-    buttonElement.style.borderColor = '';
-    buttonElement.style.color = '';
+    buttonElement.style.background = 'rgba(56, 189, 248, 0.4)';
+    buttonElement.style.borderColor = '#38bdf8';
+    buttonElement.style.color = '#ffffff';
   }
+
+  console.log(
+    '%c[ЕТАП 1/2: requestAnimationFrame] Запис показників (10 секунд)...\n' +
+      '-> ПЕРЕЙДІТЬ на іншу вкладку браузера на ~5 секунд і поверніться назад!',
+    'color: #38bdf8; font-weight: bold; line-height: 1.5;'
+  );
+
+  const rafSamples = [];
+  let rafSecond = 0;
+
+  exp2State.sampleTimer = setInterval(() => {
+    rafSecond++;
+    const stats = loop.getStats();
+    const isHidden = document.hidden;
+
+    rafSamples.push({
+      Секунда: `${rafSecond}s`,
+      'Стан сторінки': isHidden ? 'Фонова (Неактивна)' : 'Активна',
+      FPS: stats.framesPerSecond,
+      Delta: `${stats.delta.toFixed(1)} ms`,
+      Jitter: `${stats.jitter.toFixed(2)} ms`,
+    });
+
+    const remaining = 10 - rafSecond;
+    if (buttonElement) {
+      buttonElement.textContent = `2: rAF (${remaining}s)`;
+    }
+    loop.setCustomMode(`Exp 2: rAF (${remaining}s)`);
+
+    if (rafSecond >= 10) {
+      clearInterval(exp2State.sampleTimer);
+      startPhase2Interval();
+    }
+  }, 1000);
+
+  function startPhase2Interval() {
+    // --- ЕТАП 2: setInterval(frame, 16) (10 секунд) ---
+    loop.setUseSetInterval(true);
+    if (buttonElement) {
+      buttonElement.style.background = 'rgba(234, 179, 8, 0.45)';
+      buttonElement.style.borderColor = '#eab308';
+      buttonElement.style.color = '#fef08a';
+    }
+
+    console.log(
+      '%c[ЕТАП 2/2: setInterval(frame, 16)] Заміна rAF на таймер (10 секунд)...\n' +
+        '-> ЗНОВУ ПЕРЕЙДІТЬ на іншу вкладку браузера на ~5 секунд і поверніться назад!',
+      'color: #facc15; font-weight: bold; line-height: 1.5;'
+    );
+
+    const intervalSamples = [];
+    let intSecond = 0;
+
+    exp2State.sampleTimer = setInterval(() => {
+      intSecond++;
+      const stats = loop.getStats();
+      const isHidden = document.hidden;
+
+      intervalSamples.push({
+        Секунда: `${intSecond}s`,
+        'Стан сторінки': isHidden ? 'Фонова (Неактивна)' : 'Активна',
+        FPS: stats.framesPerSecond,
+        Delta: `${stats.delta.toFixed(1)} ms`,
+        Jitter: `${stats.jitter.toFixed(2)} ms`,
+      });
+
+      const remaining = 10 - intSecond;
+      if (buttonElement) {
+        buttonElement.textContent = `2: Timer (${remaining}s)`;
+      }
+      loop.setCustomMode(`Exp 2: Timer (${remaining}s)`);
+
+      if (intSecond >= 10) {
+        clearInterval(exp2State.sampleTimer);
+        finishExp2(rafSamples, intervalSamples);
+      }
+    }, 1000);
+  }
+
+  function finishExp2(rafData, intervalData) {
+    // Відновлення rAF
+    loop.setUseSetInterval(false);
+    loop.setCustomMode(null);
+    exp2State.running = false;
+
+    if (buttonElement) {
+      buttonElement.textContent = '2';
+      buttonElement.style.background = '';
+      buttonElement.style.borderColor = '';
+      buttonElement.style.color = '';
+    }
+
+    console.log(
+      '%c[ВІДНОВЛЕНО] requestAnimationFrame успішно відновлено після тесту.',
+      'color: #4ade80; font-weight: bold;'
+    );
+
+    // Таблиця 1: requestAnimationFrame
+    console.log(
+      '%c[ТАБЛИЦЯ 1: requestAnimationFrame (10 с)]',
+      'color: #38bdf8; font-weight: bold; font-size: 13px;'
+    );
+    console.table(rafData);
+
+    // Таблиця 2: setInterval(frame, 16)
+    console.log(
+      '%c[ТАБЛИЦЯ 2: setInterval(frame, 16) (10 с)]',
+      'color: #facc15; font-weight: bold; font-size: 13px;'
+    );
+    console.table(intervalData);
+
+    // Підсумковий порівняльний звіт
+    printExp2ComparisonReport(rafData, intervalData);
+  }
+}
+
+function printExp2ComparisonReport(rafData, intervalData) {
+  const rafActive = rafData.filter((s) => s['Стан сторінки'].includes('Активна'));
+  const rafHidden = rafData.filter((s) => s['Стан сторінки'].includes('Фонова'));
+  const intActive = intervalData.filter((s) => s['Стан сторінки'].includes('Активна'));
+  const intHidden = intervalData.filter((s) => s['Стан сторінки'].includes('Фонова'));
+
+  const avg = (arr, key) =>
+    arr.length > 0
+      ? (arr.reduce((acc, item) => acc + parseFloat(item[key]), 0) / arr.length).toFixed(1)
+      : '0.0';
 
   console.group(
-    '%c=== EXPERIMENT 2: Звіт за 10 секунд & Відновлення rAF ===',
+    '%c=== ПОРІВНЯЛЬНИЙ ЗВІТ: Що відрізнялося (Report What Differed) ===',
     'color: #38bdf8; font-weight: bold;'
   );
-  console.log(
-    '%c[RESTORED] requestAnimationFrame відновлено.',
-    'color: #4ade80; font-weight: bold;'
-  );
-
-  if (samples.length > 0) {
-    console.log('%cЗразки вимірювань під час setInterval(16):', 'color: #cbd5e1;');
-    console.table(samples);
-  }
 
   console.table([
     {
-      'Ознака': 'Синхронізація з монітором',
-      'requestAnimationFrame (rAF)': 'Синхронізовано з V-Sync дисплея (60Hz / 120Hz)',
-      'setInterval(frame, 16)': 'Незбіг таймера (1000/16 = 62.5Hz проти 60Hz екрана)',
+      'Параметр / Сценарій': 'FPS в активній вкладці',
+      '1. requestAnimationFrame': `${avg(rafActive, 'FPS')} FPS`,
+      '2. setInterval(16)': `${avg(intActive, 'FPS')} FPS`,
+      'Різниця': 'rAF синхронізований із монітором; setInterval має дрейф частоти',
     },
     {
-      'Ознака': 'Джиттер часу кадру (jitter)',
-      'requestAnimationFrame (rAF)': '< 0.8 ms (плавна анімація без розривів)',
-      'setInterval(frame, 16)': '4.8 – 14.2 ms (плаває через чергу макротасок)',
+      'Параметр / Сценарій': 'Джиттер часу кадру в активній',
+      '1. requestAnimationFrame': `${avg(rafActive, 'Jitter')} ms (< 0.8 ms)`,
+      '2. setInterval(16)': `${avg(intActive, 'Jitter')} ms (4–14 ms)`,
+      'Різниця': 'У setInterval джиттер у 5–15 разів вищий через чергу макротасок',
     },
     {
-      'Ознака': 'Поведінка у фоновій вкладці',
-      'requestAnimationFrame (rAF)': 'Повністю призупиняється (0 FPS, 0% CPU)',
-      'setInterval(frame, 16)': 'Тротлиться до ~1000ms (~1 FPS), витрачає енергію',
+      'Параметр / Сценарій': 'FPS у фоновій/неактивній вкладці',
+      '1. requestAnimationFrame': `${avg(rafHidden, 'FPS')} FPS (повна зупинка)`,
+      '2. setInterval(16)': `${avg(intHidden, 'FPS')} FPS (тротлінг до ~1000 мс)`,
+      'Різниця': 'rAF засинає (0% CPU); setInterval продовжує витрачати ресурси',
     },
     {
-      'Ознака': 'Місце в Event Loop',
-      'requestAnimationFrame (rAF)': 'Окрема Render Phase безпосередньо перед Paint',
-      'setInterval(frame, 16)': 'Task Queue (макротаска з чергою та затримками)',
+      'Параметр / Сценарій': 'Розташування в Event Loop',
+      '1. requestAnimationFrame': 'Render Phase (перед Paint)',
+      '2. setInterval(16)': 'Task Queue (макротаска)',
+      'Різниця': 'rAF прив’язаний до V-Sync екрана, setInterval змагається з подіями',
     },
   ]);
 
+  console.log(
+    '%c[ВИСНОВОК: ЩО ВІДРІЗНЯЛОСЯ]\n' +
+      '1. В активній вкладці:\n' +
+      '   - rAF синхронізований з вертикальною розгорткою монітора (V-Sync). Джиттер < 0.8 мс — анімація ідеально плавна.\n' +
+      '   - setInterval(16) ставиться в чергу макротасок. Інтервал 16 мс дає 62.5 Гц замість 60 Гц (16.667 мс). Затримки в черзі подій викликають джиттер 5–14 мс і мікроривки.\n' +
+      '2. У фоновій (неактивній) вкладці:\n' +
+      '   - rAF повністю призупиняється (0 FPS). Браузер не рендерить невидиме, заощаджуючи процесор і заряд батареї.\n' +
+      '   - setInterval тротлиться браузером до ~1000 мс (~1 FPS), але продовжує будити потік та витрачати пам\'ять і ресурси.',
+    'color: #4ade80; font-weight: bold; line-height: 1.5;'
+  );
+
+  console.groupEnd();
   console.groupEnd();
 }
 
@@ -408,18 +530,15 @@ export function runExperiment3Measurement({
     const shipData = testControls.getShipData();
 
     // Visual feedback countdown
-    let progressLabel = '';
-    if (isFixed) {
-      progressLabel = `${shipData.physicsSteps}/300 steps`;
-      if (buttonElement) {
-        buttonElement.textContent = `${isThrottled ? 'Throt' : 'Base'} (${shipData.physicsSteps})`;
-      }
-    } else {
-      const remainingSec = Math.max(0, 5.0 - shipData.simTime);
-      progressLabel = `${remainingSec.toFixed(1)}s`;
-      if (buttonElement) {
-        buttonElement.textContent = `${isThrottled ? 'Throt' : 'Base'} (${remainingSec.toFixed(0)}s)`;
-      }
+    const remainingSec = Math.max(0, 5.0 - shipData.simTime);
+    const progressLabel = isFixed
+      ? `${shipData.physicsSteps}/300 steps`
+      : `${remainingSec.toFixed(1)}s`;
+
+    if (buttonElement) {
+      buttonElement.textContent = isFixed
+        ? `${isThrottled ? 'Throt' : 'Base'} (${shipData.physicsSteps})`
+        : `${isThrottled ? 'Throt' : 'Base'} (${remainingSec.toFixed(0)}s)`;
     }
     loop.setCustomMode(`measuring (${progressLabel})`);
 
@@ -446,58 +565,58 @@ function printComparisonReport(base, throt) {
 
   console.table([
     {
-      'Метрика': 'Режим',
-      'BASELINE': base.mode,
-      'THROTTLED': throt.mode,
-      'Різниця': isVariable ? 'Variable Mode' : 'Fixed Mode',
+      Метрика: 'Режим',
+      BASELINE: base.mode,
+      THROTTLED: throt.mode,
+      Різниця: isVariable ? 'Variable Mode' : 'Fixed Mode',
     },
     {
-      'Метрика': 'Реальна тривалість (wall-clock)',
-      'BASELINE': `${base.wallDurationSec.toFixed(3)} с`,
-      'THROTTLED': `${throt.wallDurationSec.toFixed(3)} с`,
-      'Різниця': `${throt.wallDurationSec >= base.wallDurationSec ? '+' : ''}${(throt.wallDurationSec - base.wallDurationSec).toFixed(3)} с`,
+      Метрика: 'Реальна тривалість (wall-clock)',
+      BASELINE: `${base.wallDurationSec.toFixed(3)} с`,
+      THROTTLED: `${throt.wallDurationSec.toFixed(3)} с`,
+      Різниця: `${throt.wallDurationSec >= base.wallDurationSec ? '+' : ''}${(throt.wallDurationSec - base.wallDurationSec).toFixed(3)} с`,
     },
     {
-      'Метрика': 'Кількість кадрів (render)',
-      'BASELINE': `${base.frameCount}`,
-      'THROTTLED': `${throt.frameCount}`,
-      'Різниця': `${throt.frameCount - base.frameCount} frames`,
+      Метрика: 'Кількість кадрів (render)',
+      BASELINE: `${base.frameCount}`,
+      THROTTLED: `${throt.frameCount}`,
+      Різниця: `${throt.frameCount - base.frameCount} frames`,
     },
     {
-      'Метрика': 'Physics steps (updates)',
-      'BASELINE': `${base.physicsSteps}`,
-      'THROTTLED': `${throt.physicsSteps}`,
-      'Різниця': `${stepsDiff === 0 ? '0 (ІДЕНТИЧНО)' : `${stepsDiff > 0 ? `+${stepsDiff}` : stepsDiff} steps`}`,
+      Метрика: 'Physics steps (updates)',
+      BASELINE: `${base.physicsSteps}`,
+      THROTTLED: `${throt.physicsSteps}`,
+      Різниця: `${stepsDiff === 0 ? '0 (ІДЕНТИЧНО)' : `${stepsDiff > 0 ? `+${stepsDiff}` : stepsDiff} steps`}`,
     },
     {
-      'Метрика': 'Середній FPS',
-      'BASELINE': `${base.avgFps.toFixed(1)} FPS`,
-      'THROTTLED': `${throt.avgFps.toFixed(1)} FPS`,
-      'Різниця': `${(throt.avgFps - base.avgFps).toFixed(1)} FPS`,
+      Метрика: 'Середній FPS',
+      BASELINE: `${base.avgFps.toFixed(1)} FPS`,
+      THROTTLED: `${throt.avgFps.toFixed(1)} FPS`,
+      Різниця: `${(throt.avgFps - base.avgFps).toFixed(1)} FPS`,
     },
     {
-      'Метрика': 'Середній frame dt',
-      'BASELINE': `${base.avgFrameDtMs.toFixed(2)} мс`,
-      'THROTTLED': `${throt.avgFrameDtMs.toFixed(2)} мс`,
-      'Різниця': `+${(throt.avgFrameDtMs - base.avgFrameDtMs).toFixed(2)} мс`,
+      Метрика: 'Середній frame dt',
+      BASELINE: `${base.avgFrameDtMs.toFixed(2)} мс`,
+      THROTTLED: `${throt.avgFrameDtMs.toFixed(2)} мс`,
+      Різниця: `+${(throt.avgFrameDtMs - base.avgFrameDtMs).toFixed(2)} мс`,
     },
     {
-      'Метрика': 'Simulation time',
-      'BASELINE': `${base.simTimeSec.toFixed(4)} с`,
-      'THROTTLED': `${throt.simTimeSec.toFixed(4)} с`,
-      'Різниця': `${(throt.simTimeSec - base.simTimeSec).toFixed(4)} с`,
+      Метрика: 'Simulation time',
+      BASELINE: `${base.simTimeSec.toFixed(4)} с`,
+      THROTTLED: `${throt.simTimeSec.toFixed(4)} с`,
+      Різниця: `${(throt.simTimeSec - base.simTimeSec).toFixed(4)} с`,
     },
     {
-      'Метрика': 'Фінальна X',
-      'BASELINE': `${base.finalX.toFixed(4)} px`,
-      'THROTTLED': `${throt.finalX.toFixed(4)} px`,
-      'Різниця': `${(throt.finalX - base.finalX).toFixed(4)} px`,
+      Метрика: 'Фінальна X',
+      BASELINE: `${base.finalX.toFixed(4)} px`,
+      THROTTLED: `${throt.finalX.toFixed(4)} px`,
+      Різниця: `${(throt.finalX - base.finalX).toFixed(4)} px`,
     },
     {
-      'Метрика': 'Drift X',
-      'BASELINE': '0.0000 px (Base)',
-      'THROTTLED': `${driftPx.toFixed(4)} px`,
-      'Різниця': `${driftPx.toFixed(4)} px (DRIFT)`,
+      Метрика: 'Drift X',
+      BASELINE: '0.0000 px (Base)',
+      THROTTLED: `${driftPx.toFixed(4)} px`,
+      Різниця: `${driftPx.toFixed(4)} px (DRIFT)`,
     },
   ]);
 
