@@ -9,12 +9,14 @@
  *   frame, tick, delta, jitter, mode, steps/s, frames/s.
  * - Live hooks for Milestone 4 experiments (hitch injection, setInterval, variable step).
  */
-export function createLoop({ step = 1 / 60, simulate, render }) {
+export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) {
   let accumulator = 0;
   let last = 0;
   let animationId = null;
   let intervalId = null;
   let running = false;
+  let frameCallback = onFrame;
+  let customModeStatus = null;
 
   let totalTicks = 0;
   let totalFrames = 0;
@@ -95,6 +97,17 @@ export function createLoop({ step = 1 / 60, simulate, render }) {
       statsTimer = now;
     }
 
+    // Hook for real frame measurement (Experiment 3) — executes strictly AFTER physics & render of this frame
+    if (frameCallback) {
+      frameCallback({
+        dt: deltaSec,
+        deltaMs: currentDeltaMs,
+        timestamp: now,
+        totalTicks,
+        totalFrames,
+      });
+    }
+
     if (!useSetInterval && running) {
       animationId = requestAnimationFrame(tick);
     }
@@ -133,7 +146,13 @@ export function createLoop({ step = 1 / 60, simulate, render }) {
     last = 0;
   }
 
+  function resetAccumulator() {
+    accumulator = 0;
+    last = performance.now();
+  }
+
   function getModeString() {
+    if (customModeStatus) return customModeStatus;
     if (busyWaitEvery60) return 'hitch (100ms/60f)';
     if (useSetInterval) return 'setInterval (16ms)';
     if (variableTimestep) return 'variable timestep';
@@ -141,9 +160,13 @@ export function createLoop({ step = 1 / 60, simulate, render }) {
   }
 
   function getStats() {
+    const timeSinceLastFrame = last > 0 ? performance.now() - last : 0;
+    const currentFps = timeSinceLastFrame > 1200 ? 0 : framesPerSecond;
+    const currentSteps = timeSinceLastFrame > 1200 ? 0 : stepsPerSecond;
+
     return {
-      stepsPerSecond,
-      framesPerSecond,
+      stepsPerSecond: currentSteps,
+      framesPerSecond: currentFps,
       lastFrameDuration,
       delta: lastFrameDuration,
       frame: totalFrames,
@@ -171,9 +194,18 @@ export function createLoop({ step = 1 / 60, simulate, render }) {
     variableTimestep = Boolean(enabled);
   }
 
+  function setOnFrame(callback) {
+    frameCallback = callback;
+  }
+
+  function setCustomMode(status) {
+    customModeStatus = status;
+  }
+
   return {
     start,
     stop,
+    resetAccumulator,
     getStats,
     setBusyWait,
     isBusyWait: () => busyWaitEvery60,
@@ -181,5 +213,7 @@ export function createLoop({ step = 1 / 60, simulate, render }) {
     isUseSetInterval: () => useSetInterval,
     setVariableTimestep,
     isVariableTimestep: () => variableTimestep,
+    setOnFrame,
+    setCustomMode,
   };
 }
