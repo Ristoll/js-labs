@@ -8,7 +8,6 @@
  * 3. Fixed Timestep vs Variable Timestep Trajectory Determinism (Baseline vs Throttled).
  */
 
-
 /**
  * Experiment 1: 100ms Synchronous Freeze every 60th frame
  */
@@ -238,7 +237,7 @@ function printExp2ComparisonReport(rafData, intervalData) {
 
   const avg = (arr, key) =>
     arr.length > 0
-      ? (arr.reduce((acc, item) => acc + parseFloat(item[key]), 0) / arr.length).toFixed(1)
+      ? (arr.reduce((acc, item) => acc + Number.parseFloat(item[key]), 0) / arr.length).toFixed(1)
       : '0.0';
 
   console.group(
@@ -251,25 +250,25 @@ function printExp2ComparisonReport(rafData, intervalData) {
       'Параметр / Сценарій': 'FPS в активній вкладці',
       '1. requestAnimationFrame': `${avg(rafActive, 'FPS')} FPS`,
       '2. setInterval(16)': `${avg(intActive, 'FPS')} FPS`,
-      'Різниця': 'rAF синхронізований із монітором; setInterval має дрейф частоти',
+      Різниця: 'rAF синхронізований із монітором; setInterval має дрейф частоти',
     },
     {
       'Параметр / Сценарій': 'Джиттер часу кадру в активній',
       '1. requestAnimationFrame': `${avg(rafActive, 'Jitter')} ms (< 0.8 ms)`,
       '2. setInterval(16)': `${avg(intActive, 'Jitter')} ms (4–14 ms)`,
-      'Різниця': 'У setInterval джиттер у 5–15 разів вищий через чергу макротасок',
+      Різниця: 'У setInterval джиттер у 5–15 разів вищий через чергу макротасок',
     },
     {
       'Параметр / Сценарій': 'FPS у фоновій/неактивній вкладці',
       '1. requestAnimationFrame': `${avg(rafHidden, 'FPS')} FPS (повна зупинка)`,
       '2. setInterval(16)': `${avg(intHidden, 'FPS')} FPS (тротлінг до ~1000 мс)`,
-      'Різниця': 'rAF засинає (0% CPU); setInterval продовжує витрачати ресурси',
+      Різниця: 'rAF засинає (0% CPU); setInterval продовжує витрачати ресурси',
     },
     {
       'Параметр / Сценарій': 'Розташування в Event Loop',
       '1. requestAnimationFrame': 'Render Phase (перед Paint)',
       '2. setInterval(16)': 'Task Queue (макротаска)',
-      'Різниця': 'rAF прив’язаний до V-Sync екрана, setInterval змагається з подіями',
+      Різниця: 'rAF прив’язаний до V-Sync екрана, setInterval змагається з подіями',
     },
   ]);
 
@@ -280,7 +279,7 @@ function printExp2ComparisonReport(rafData, intervalData) {
       '   - setInterval(16) ставиться в чергу макротасок. Інтервал 16 мс дає 62.5 Гц замість 60 Гц (16.667 мс). Затримки в черзі подій викликають джиттер 5–14 мс і мікроривки.\n' +
       '2. У фоновій (неактивній) вкладці:\n' +
       '   - rAF повністю призупиняється (0 FPS). Браузер не рендерить невидиме, заощаджуючи процесор і заряд батареї.\n' +
-      '   - setInterval тротлиться браузером до ~1000 мс (~1 FPS), але продовжує будити потік та витрачати пам\'ять і ресурси.',
+      "   - setInterval тротлиться браузером до ~1000 мс (~1 FPS), але продовжує будити потік та витрачати пам'ять і ресурси.",
     'color: #4ade80; font-weight: bold; line-height: 1.5;'
   );
 
