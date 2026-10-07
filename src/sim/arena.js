@@ -1,7 +1,7 @@
 /**
  * Arena boundary definitions and wrap-around toroidal geometry.
  *
- * All functions are pure and free of DOM or canvas dependencies.
+ * All functions are pure simulation utilities free of DOM or canvas dependencies.
  */
 
 export function createArena(width = 1200, height = 800) {
@@ -12,11 +12,12 @@ export function createArena(width = 1200, height = 800) {
 }
 
 /**
- * Pure wrap-around function ensuring the entity remains within arena bounds.
+ * Wrap-around function ensuring the entity remains within arena bounds.
+ * Preserves entity class instances and prototype delegations.
  *
  * @param {Object} entity Any entity with { x, y }
  * @param {Object} arena Arena dimensions { width, height }
- * @returns {Object} New entity state wrapped within bounds
+ * @returns {Object} Wrapped entity
  */
 export function wrapAround(entity, arena) {
   let { x, y } = entity;
@@ -30,13 +31,7 @@ export function wrapAround(entity, arena) {
     y = ((y % height) + height) % height;
   }
 
-  if (x === entity.x && y === entity.y) {
-    return entity;
-  }
-
-  return {
-    ...entity,
-    x,
-    y,
-  };
+  entity.x = x;
+  entity.y = y;
+  return entity;
 }

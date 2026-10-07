@@ -374,6 +374,272 @@ export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena
 }
 
 /**
+ * Draws a bullet laser projectile with glow tracer.
+ */
+export function drawBullet(ctx, currentBullet, previousBullet = null, alpha = 1, arena = null) {
+  let x = currentBullet.x;
+  let y = currentBullet.y;
+
+  if (previousBullet && alpha < 1) {
+    if (arena && arena.width > 0 && arena.height > 0) {
+      x = lerpCoordinate(previousBullet.x, currentBullet.x, alpha, arena.width);
+      y = lerpCoordinate(previousBullet.y, currentBullet.y, alpha, arena.height);
+    } else {
+      x = lerp(previousBullet.x, currentBullet.x, alpha);
+      y = lerp(previousBullet.y, currentBullet.y, alpha);
+    }
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(currentBullet.angle);
+
+  // Outer glowing energy bolt
+  const isHoming = Boolean(currentBullet.homing);
+  const boltColor = isHoming ? '#c084fc' : '#38bdf8';
+
+  ctx.beginPath();
+  ctx.moveTo(-7, 0);
+  ctx.lineTo(7, 0);
+  ctx.strokeStyle = boltColor;
+  ctx.lineWidth = isHoming ? 4.5 : 3.5;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = boltColor;
+  ctx.shadowBlur = isHoming ? 14 : 10;
+  ctx.stroke();
+
+  // White-hot plasma core
+  ctx.beginPath();
+  ctx.moveTo(-4, 0);
+  ctx.lineTo(6, 0);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Draws a craggy asteroid with realistic tumbling rotation.
+ */
+export function drawAsteroid(
+  ctx,
+  currentAsteroid,
+  previousAsteroid = null,
+  alpha = 1,
+  arena = null
+) {
+  let x = currentAsteroid.x;
+  let y = currentAsteroid.y;
+  let angle = currentAsteroid.angle;
+
+  if (previousAsteroid && alpha < 1) {
+    if (arena && arena.width > 0 && arena.height > 0) {
+      x = lerpCoordinate(previousAsteroid.x, currentAsteroid.x, alpha, arena.width);
+      y = lerpCoordinate(previousAsteroid.y, currentAsteroid.y, alpha, arena.height);
+    } else {
+      x = lerp(previousAsteroid.x, currentAsteroid.x, alpha);
+      y = lerp(previousAsteroid.y, currentAsteroid.y, alpha);
+    }
+    angle = lerpAngle(previousAsteroid.angle, currentAsteroid.angle, alpha);
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  const vertices = currentAsteroid.vertices;
+  if (vertices && vertices.length > 0) {
+    ctx.beginPath();
+    ctx.moveTo(vertices[0].x, vertices[0].y);
+    for (let i = 1; i < vertices.length; i++) {
+      ctx.lineTo(vertices[i].x, vertices[i].y);
+    }
+    ctx.closePath();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.fill();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#94a3b8';
+    ctx.shadowColor = '#475569';
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(0, 0, currentAsteroid.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b';
+    ctx.fill();
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Draws expanding particle explosion sparks.
+ */
+export function drawExplosion(
+  ctx,
+  currentExplosion,
+  previousExplosion = null,
+  alpha = 1,
+  arena = null
+) {
+  let x = currentExplosion.x;
+  let y = currentExplosion.y;
+
+  if (previousExplosion && alpha < 1) {
+    if (arena && arena.width > 0 && arena.height > 0) {
+      x = lerpCoordinate(previousExplosion.x, currentExplosion.x, alpha, arena.width);
+      y = lerpCoordinate(previousExplosion.y, currentExplosion.y, alpha, arena.height);
+    } else {
+      x = lerp(previousExplosion.x, currentExplosion.x, alpha);
+      y = lerp(previousExplosion.y, currentExplosion.y, alpha);
+    }
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  const particles = currentExplosion.particles;
+  const prevParticles = previousExplosion?.particles;
+
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    if (p.ttl <= 0) continue;
+
+    let px = p.x;
+    let py = p.y;
+    if (prevParticles && prevParticles[i] && alpha < 1) {
+      px = lerp(prevParticles[i].x, p.x, alpha);
+      py = lerp(prevParticles[i].y, p.y, alpha);
+    }
+
+    const fade = Math.max(0, Math.min(1, p.ttl / p.maxTtl));
+
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 8;
+
+    ctx.beginPath();
+    ctx.arc(px, py, Math.max(0.5, p.size * fade), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Draws a glowing stationary pickup bonus with pulsing animation.
+ */
+export function drawPickup(ctx, currentPickup, previousPickup = null, alpha = 1, arena = null) {
+  let x = currentPickup.x;
+  let y = currentPickup.y;
+
+  if (previousPickup && alpha < 1) {
+    if (arena && arena.width > 0 && arena.height > 0) {
+      x = lerpCoordinate(previousPickup.x, currentPickup.x, alpha, arena.width);
+      y = lerpCoordinate(previousPickup.y, currentPickup.y, alpha, arena.height);
+    } else {
+      x = lerp(previousPickup.x, currentPickup.x, alpha);
+      y = lerp(previousPickup.y, currentPickup.y, alpha);
+    }
+  }
+
+  const isShield = currentPickup.type === 'shield';
+  const color = isShield ? '#4ade80' : '#facc15';
+  const pulse = 1 + Math.sin(currentPickup.pulseTime * 4.5) * 0.15;
+  const size = currentPickup.radius * pulse;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(currentPickup.angle);
+
+  // Outer glowing aura
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 1.35, 0, Math.PI * 2);
+  ctx.fillStyle = isShield ? 'rgba(74, 222, 128, 0.18)' : 'rgba(250, 204, 21, 0.18)';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  ctx.fill();
+  ctx.restore();
+
+  // Geometric container (diamond for shield, hexagon for rapid fire)
+  ctx.beginPath();
+  if (isShield) {
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size, 0);
+    ctx.lineTo(0, size);
+    ctx.lineTo(-size, 0);
+  } else {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const px = Math.cos(a) * size;
+      const py = Math.sin(a) * size;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+  }
+  ctx.closePath();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.stroke();
+
+  // Core icon symbol
+  ctx.beginPath();
+  if (isShield) {
+    // Shield cross
+    ctx.moveTo(0, -size * 0.45);
+    ctx.lineTo(0, size * 0.45);
+    ctx.moveTo(-size * 0.45, 0);
+    ctx.lineTo(size * 0.45, 0);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else {
+    // Twin sparks
+    ctx.arc(-3, 0, 2, 0, Math.PI * 2);
+    ctx.arc(3, 0, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renders all entities in the world with proper interpolation.
+ */
+export function drawWorld(ctx, world, previousWorld = null, alpha = 1, arena = null) {
+  for (const entity of world) {
+    const prev = previousWorld ? previousWorld.get(entity.id) : null;
+    if (entity.kind === 'bullet') {
+      drawBullet(ctx, entity, prev, alpha, arena);
+    } else if (entity.kind === 'asteroid') {
+      drawAsteroid(ctx, entity, prev, alpha, arena);
+    } else if (entity.kind === 'ship') {
+      drawShip(ctx, entity, prev, alpha, arena);
+    } else if (entity.kind === 'explosion') {
+      drawExplosion(ctx, entity, prev, alpha, arena);
+    } else if (entity.kind === 'pickup') {
+      drawPickup(ctx, entity, prev, alpha, arena);
+    }
+  }
+}
+
+/**
  * Draws the Heads-Up Display (HUD) showing frame and simulation rates.
  * Compatible with all browser Canvas implementations.
  */
@@ -387,13 +653,18 @@ export function drawHud(ctx, stats) {
     tick = 0,
     jitter = 0,
     mode = 'fixed (60 Hz)',
+    score = 0,
+    hp = 3,
+    respawnTimer = 0,
+    shipAlive = true,
+    rapidFireTimer = 0,
   } = stats || {};
 
   ctx.save();
   const hudX = 16;
   const hudY = 16;
-  const boxWidth = 224;
-  const boxHeight = 172;
+  const boxWidth = 228;
+  const boxHeight = rapidFireTimer > 0 ? 224 : 206;
 
   // Background panel
   ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
@@ -419,8 +690,28 @@ export function drawHud(ctx, stats) {
   const lineH = 17;
   const valX = hudX + 90;
 
+  let hullDisplay = `${'♥ '.repeat(Math.max(0, hp))}${hp}/3`;
+  let hullColor = hp > 1 ? '#4ade80' : '#f87171';
+  if (!shipAlive) {
+    hullDisplay = `RESPAWN ${Math.max(0, respawnTimer).toFixed(1)}s`;
+    hullColor = '#f87171';
+  }
+
   const rows = [
     { label: 'mode: ', val: mode, col: '#38bdf8' },
+    { label: 'score:', val: `${score}`, col: '#facc15' },
+    { label: 'hull: ', val: hullDisplay, col: hullColor },
+  ];
+
+  if (rapidFireTimer > 0) {
+    rows.push({
+      label: 'buff: ',
+      val: `⚡ RAPID (${rapidFireTimer.toFixed(1)}s)`,
+      col: '#facc15',
+    });
+  }
+
+  rows.push(
     { label: 'frame:', val: `${frame}`, col: '#cbd5e1' },
     { label: 'tick: ', val: `${tick}`, col: '#cbd5e1' },
     {
@@ -438,8 +729,8 @@ export function drawHud(ctx, stats) {
       label: 'jitter:',
       val: `${jitter.toFixed(2)} ms`,
       col: jitter > 4 ? '#facc15' : '#a7f3d0',
-    },
-  ];
+    }
+  );
 
   ctx.font = '500 12px ui-monospace, Consolas, monospace';
   rows.forEach((row, idx) => {
