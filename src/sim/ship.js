@@ -82,6 +82,17 @@ export class Ship extends Entity {
   }
 
   /**
+   * Restores ship health points up to maximum (default: 3).
+   * Leaves velocity, momentum, and timers unaffected.
+   * @param {number} [amount=3] Health points to restore
+   * @returns {number} Current health points
+   */
+  heal(amount = 3) {
+    this.#hp = Math.min(3, this.#hp + amount);
+    return this.#hp;
+  }
+
+  /**
    * Resets ship state for safe respawn.
    * @param {number} x
    * @param {number} y
