@@ -4,6 +4,8 @@
  * and emitting colliding pairs (a, b) for easy spatial hash upgrade in Lab 7.
  */
 
+import { simEvents } from './events.js';
+
 /**
  * Checks circle-circle collision between two entities with radius.
  * @param {import('./entity.js').Entity} a
@@ -107,6 +109,7 @@ export function resolveCollisions(world, collisions, onEvent = null) {
           score: 100,
         });
       }
+      simEvents.dispatchEvent(new CustomEvent('exploded', { detail: { x: asteroid.x, y: asteroid.y } }));
       continue;
     }
 
@@ -135,6 +138,7 @@ export function resolveCollisions(world, collisions, onEvent = null) {
           destroyed,
         });
       }
+      simEvents.dispatchEvent(new CustomEvent('hit', { detail: { shipId: ship.id, hp: ship.hp } }));
       continue;
     }
 

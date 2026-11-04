@@ -3,11 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lab 02 — The Entity Model</title>
+    <title>Lab 03 — Asynchronous JavaScript</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <canvas id="game-canvas"></canvas>
+
+    <!-- M3 — Lobby Screen (shown after asset load, before game start) -->
+    <div id="lobby-screen" class="hidden">
+      <div class="lobby-card">
+        <div class="lobby-header">
+          <span class="lobby-badge">LAB 03 // M3</span>
+          <h1 class="lobby-title">DOGFIGHT</h1>
+          <p class="lobby-subtitle">Select a room and enter your pilot name to join.</p>
+        </div>
+
+        <div class="lobby-name-row">
+          <label for="lobby-player-name" class="lobby-label">Pilot name</label>
+          <input
+            id="lobby-player-name"
+            class="lobby-input"
+            type="text"
+            maxlength="24"
+            placeholder="Pilot"
+            value="Pilot"
+          />
+          <span id="lobby-refresh-indicator" class="lobby-refresh-dot" title="Refreshing…"></span>
+        </div>
+
+        <div id="lobby-error" class="lobby-error hidden"></div>
+
+        <ul id="lobby-room-list" class="lobby-room-list">
+          <li class="lobby-empty">Loading rooms…</li>
+        </ul>
+
+        <p class="lobby-footer-hint">Rooms refresh every 5 s · Leaving cancels in-flight request</p>
+      </div>
+    </div>
 
     <div id="controls-hint">
       <kbd>W</kbd>/<kbd>▲</kbd> Forward &bull; <kbd>S</kbd>/<kbd>▼</kbd> Reverse &bull;
@@ -42,6 +74,100 @@
       >
         Throt
       </button>
+      <button
+        id="btn-exp-m1"
+        class="exp-btn exp-btn-highlight"
+        title="M1 — Asset Pipeline: Real Data Verification"
+      >
+        M1: Assets
+      </button>
+    </div>
+
+    <!-- M1 — Asset Pipeline: Real Data Verification Modal Panel -->
+    <div
+      id="m1-experiment-panel"
+      class="m1-panel hidden"
+      role="dialog"
+      aria-labelledby="m1-panel-title"
+    >
+      <div class="m1-panel-header">
+        <div class="m1-panel-title-wrap">
+          <span class="m1-panel-badge">LAB 03 // M1</span>
+          <h2 id="m1-panel-title">Asset Pipeline: Real Data Verification</h2>
+        </div>
+        <button id="btn-m1-close" class="m1-close-btn" title="Закрити панель">&times;</button>
+      </div>
+
+      <div class="m1-panel-actions">
+        <button
+          id="btn-m1-verify-assets"
+          class="m1-action-btn"
+          title="Завантажити маніфест і перевірити кожен обов'язковий ресурс"
+        >
+          Перевірити реальні ресурси
+        </button>
+        <button
+          id="btn-m1-verify-progress"
+          class="m1-action-btn"
+          title="Виконати реальне завантаження через loadAll та перевірити прогрес"
+        >
+          Перевірити прогрес
+        </button>
+        <button
+          id="btn-m1-verify-retry"
+          class="m1-action-btn"
+          title="Перевірити поведінку на 404 (без retry) та 5xx (з retry)"
+        >
+          Перевірити помилку та retry
+        </button>
+        <button
+          id="btn-m1-compare-timing"
+          class="m1-action-btn"
+          title="Порівняти Promise.all та Sequential на однакових ресурсах із cache-busting"
+        >
+          Порівняти паралельне й послідовне
+        </button>
+        <button
+          id="btn-m1-cancel-load"
+          class="m1-action-btn m1-btn-warn"
+          title="Скасувати активне завантаження через AbortSignal"
+        >
+          Скасувати завантаження
+        </button>
+        <button
+          id="btn-m1-run-all"
+          class="m1-action-btn m1-btn-primary"
+          title="Запустити всі перевірки по черзі"
+        >
+          Всі тести M1
+        </button>
+      </div>
+
+      <div class="m1-table-wrap">
+        <table class="m1-results-table">
+          <thead>
+            <tr>
+              <th style="width: 18%">Назва тесту</th>
+              <th style="width: 13%">Статус</th>
+              <th style="width: 25%">Фактичні дані</th>
+              <th style="width: 20%">Очікуваний результат</th>
+              <th style="width: 16%">Фактичний результат</th>
+              <th style="width: 8%">Час</th>
+              <th style="width: 10%">Пояснення помилки</th>
+            </tr>
+          </thead>
+          <tbody id="m1-results-tbody">
+            <!-- Rendered dynamically by renderResultsTable() -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="m1-panel-footer">
+        <small class="text-muted">
+          * Порівняння часу використовує cache-busting параметри (<code>_cb</code>), щоб усунути
+          вплив кешу браузера на вимірювання.
+        </small>
+      </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>

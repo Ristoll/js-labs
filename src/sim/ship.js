@@ -2,6 +2,7 @@ import { Entity } from './entity.js';
 import { Vector2 } from './vector.js';
 import { Bullet } from './bullet.js';
 import { HomingComponent } from './homing.js';
+import { simEvents } from './events.js';
 
 /**
  * Ship physics configuration constants.
@@ -151,6 +152,8 @@ export class Ship extends Entity {
     if (world && typeof world.spawn === 'function') {
       world.spawn(bullet);
     }
+
+    simEvents.dispatchEvent(new CustomEvent('fired', { detail: { shipId: this.id } }));
 
     return bullet;
   }

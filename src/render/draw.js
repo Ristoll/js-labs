@@ -239,8 +239,10 @@ export function drawBackground(ctx, width, height, timeMs = 0) {
 
 /**
  * Draws the player spaceship with high visibility, distinct colors, and animated thrust.
+ * When a sprite HTMLImageElement is supplied, draws it via drawImage (centered, rotated).
+ * Falls back to the vector art when no sprite is available.
  */
-export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena = null) {
+export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena = null, sprite = null) {
   let x = currentShip.x;
   let y = currentShip.y;
   let angle = currentShip.angle;
@@ -261,6 +263,15 @@ export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
+
+  // If a loaded sprite is available, draw it centred on the entity.
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const sw = sprite.naturalWidth;
+    const sh = sprite.naturalHeight;
+    ctx.drawImage(sprite, -sw / 2, -sh / 2, sw, sh);
+    ctx.restore();
+    return;
+  }
 
   // 1. Engine exhaust (animated thrust flame when active, subtle blue aura when idle)
   if (thrust) {
@@ -375,8 +386,10 @@ export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena
 
 /**
  * Draws a bullet laser projectile with glow tracer.
+ * When a sprite HTMLImageElement is supplied, draws it via drawImage.
+ * Falls back to the vector laser bolt when no sprite is available.
  */
-export function drawBullet(ctx, currentBullet, previousBullet = null, alpha = 1, arena = null) {
+export function drawBullet(ctx, currentBullet, previousBullet = null, alpha = 1, arena = null, sprite = null) {
   let x = currentBullet.x;
   let y = currentBullet.y;
 
@@ -393,6 +406,15 @@ export function drawBullet(ctx, currentBullet, previousBullet = null, alpha = 1,
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(currentBullet.angle);
+
+  // If a loaded sprite is available, draw it centred on the entity.
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const sw = sprite.naturalWidth;
+    const sh = sprite.naturalHeight;
+    ctx.drawImage(sprite, -sw / 2, -sh / 2, sw, sh);
+    ctx.restore();
+    return;
+  }
 
   // Outer glowing energy bolt
   const isHoming = Boolean(currentBullet.homing);
@@ -421,13 +443,16 @@ export function drawBullet(ctx, currentBullet, previousBullet = null, alpha = 1,
 
 /**
  * Draws a craggy asteroid with realistic tumbling rotation.
+ * When a sprite HTMLImageElement is supplied, draws it via drawImage.
+ * Falls back to vertex-based polygon rendering when no sprite is available.
  */
 export function drawAsteroid(
   ctx,
   currentAsteroid,
   previousAsteroid = null,
   alpha = 1,
-  arena = null
+  arena = null,
+  sprite = null
 ) {
   let x = currentAsteroid.x;
   let y = currentAsteroid.y;
@@ -447,6 +472,14 @@ export function drawAsteroid(
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
+
+  // If a loaded sprite is available, draw it scaled to the asteroid's radius.
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const diameter = currentAsteroid.radius * 2;
+    ctx.drawImage(sprite, -diameter / 2, -diameter / 2, diameter, diameter);
+    ctx.restore();
+    return;
+  }
 
   const vertices = currentAsteroid.vertices;
   if (vertices && vertices.length > 0) {
@@ -621,16 +654,22 @@ export function drawPickup(ctx, currentPickup, previousPickup = null, alpha = 1,
 
 /**
  * Renders all entities in the world with proper interpolation.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('../sim/world.js').World} world
+ * @param {import('../sim/world.js').World|null} previousWorld
+ * @param {number} alpha Interpolation factor [0,1]
+ * @param {Object|null} arena Arena dimensions { width, height }
+ * @param {Object|null} sprites Optional sprite map { ship, bullet, asteroid } from gameAssets
  */
-export function drawWorld(ctx, world, previousWorld = null, alpha = 1, arena = null) {
+export function drawWorld(ctx, world, previousWorld = null, alpha = 1, arena = null, sprites = null) {
   for (const entity of world) {
     const prev = previousWorld ? previousWorld.get(entity.id) : null;
     if (entity.kind === 'bullet') {
-      drawBullet(ctx, entity, prev, alpha, arena);
+      drawBullet(ctx, entity, prev, alpha, arena, sprites?.bullet ?? null);
     } else if (entity.kind === 'asteroid') {
-      drawAsteroid(ctx, entity, prev, alpha, arena);
+      drawAsteroid(ctx, entity, prev, alpha, arena, sprites?.asteroid ?? null);
     } else if (entity.kind === 'ship') {
-      drawShip(ctx, entity, prev, alpha, arena);
+      drawShip(ctx, entity, prev, alpha, arena, sprites?.ship ?? null);
     } else if (entity.kind === 'explosion') {
       drawExplosion(ctx, entity, prev, alpha, arena);
     } else if (entity.kind === 'pickup') {
