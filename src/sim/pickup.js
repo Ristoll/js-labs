@@ -53,11 +53,8 @@ export class Pickup extends Entity {
             name: 'Shield Repair',
             color: '#4ade80',
             apply(ship) {
-              if (typeof ship.reset === 'function') {
-                const curX = ship.x;
-                const curY = ship.y;
-                const curAngle = ship.angle;
-                ship.reset(curX, curY, curAngle);
+              if (typeof ship.heal === 'function') {
+                ship.heal(3);
               }
             },
           }

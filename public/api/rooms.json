@@ -1,0 +1,35 @@
+[
+  {
+    "id": "alpha",
+    "name": "Alpha Sector",
+    "players": 1,
+    "maxPlayers": 4,
+    "arena": "/assets/arena.json",
+    "status": "open"
+  },
+  {
+    "id": "beta",
+    "name": "Beta Nebula",
+    "players": 3,
+    "maxPlayers": 4,
+    "arena": "/assets/arena.json",
+    "status": "open"
+  },
+  {
+    "id": "gamma",
+    "name": "Gamma Rift",
+    "players": 0,
+    "maxPlayers": 2,
+    "arena": "/assets/arena.json",
+    "status": "open"
+  },
+  {
+    "id": "delta",
+    "name": "Delta Station",
+    "players": 4,
+    "maxPlayers": 4,
+    "arena": "/assets/arena.json",
+    "status": "full"
+  }
+]
+

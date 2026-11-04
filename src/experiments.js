@@ -653,3 +653,18 @@ function printComparisonReport(base, throt) {
 
   console.groupEnd();
 }
+
+/**
+ * Lab 03 — Milestone 1: Asset Pipeline Real Data Verification
+ */
+export {
+  setupM1ExperimentUI,
+  runVerifyRealAssets,
+  runVerifyProgress,
+  runVerifyErrorAndRetry,
+  runCompareTiming,
+  runCancelLoading,
+  runAllM1Tests,
+  m1TestResults,
+  renderResultsTable,
+} from './experiments-m1.js';
