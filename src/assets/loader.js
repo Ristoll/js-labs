@@ -43,7 +43,9 @@ export async function fetchJson(url, options = {}) {
  * Retries an asynchronous function with exponential backoff and jitter.
  * Rules:
  * - 4xx errors (Client Error, e.g. 404) are never retried.
- * - Aborted requests (AbortError or signal.aborted) immediately rethrow.
+ * - User-triggered aborts (signal.aborted) stop immediately with no retry.
+ * - Timeouts (TimeoutError / AbortError NOT from the caller's signal) ARE retried —
+ *   a timed-out request is a transient failure, not a deliberate cancellation.
  * - 5xx and network errors retry up to `attempts` times.
  *
  * @template T
@@ -51,11 +53,12 @@ export async function fetchJson(url, options = {}) {
  * @param {Object} [options={}]
  * @param {number} [options.attempts=3] Maximum number of execution attempts
  * @param {number} [options.baseMs=100] Base backoff delay in milliseconds
- * @param {AbortSignal} [options.signal] Optional cancellation signal
+ * @param {AbortSignal} [options.signal] Optional cancellation signal (user-abort only)
  * @returns {Promise<T>}
  */
 export async function withRetry(fn, { attempts = 3, baseMs = 100, signal = null } = {}) {
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    // User explicitly aborted — stop immediately.
     if (signal?.aborted) {
       const abortErr = new DOMException('The operation was aborted.', 'AbortError');
       abortErr.attempts = attempt;
@@ -67,8 +70,11 @@ export async function withRetry(fn, { attempts = 3, baseMs = 100, signal = null 
     } catch (err) {
       err.attempts = attempt;
 
-      // 1. Never retry if aborted
-      if (signal?.aborted || err.name === 'AbortError') {
+      // 1. User-triggered abort: stop immediately, no retry.
+      //    We check the caller's signal specifically so that an AbortError/TimeoutError
+      //    raised by an *internal* per-request timeout is NOT treated as user-abort.
+      const isUserAbort = signal?.aborted;
+      if (isUserAbort) {
         throw err;
       }
 
@@ -88,7 +94,7 @@ export async function withRetry(fn, { attempts = 3, baseMs = 100, signal = null 
       const jitter = Math.random() * baseMs;
       const delay = backoff + jitter;
 
-      // Abort-aware delay
+      // Abort-aware delay — interrupts the wait if the user aborts during backoff.
       await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           signal?.removeEventListener('abort', onAbort);

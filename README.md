@@ -260,3 +260,4 @@ Asset loading failed: SyntaxError — not valid JSON
 Sequential total time ≈ `∑ tᵢ` (sum of all assets).
 
 Cache-busting via `?_cb=<timestamp>` ensures real network round-trips for both measurements.
+

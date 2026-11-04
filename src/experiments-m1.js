@@ -16,6 +16,7 @@ import {
   loadAudio,
   fetchJson,
   withRetry,
+  HttpError,
 } from './assets/loader.js';
 
 let activeAbortController = null;
@@ -329,16 +330,18 @@ export async function runVerifyErrorAndRetry() {
   );
 
   try {
-    // 1. Test 404: Non-existent asset must NOT be retried
+    // 1. Test 404: Non-existent asset must NOT be retried.
+    //    We throw a synthetic HttpError(404) so the test does not depend on the
+    //    dev server being reachable (a network-refused error has no .status and
+    //    would be retried, giving attempts404 = 3 and a false failure).
     let attempts404 = 0;
     let error404Status = 0;
-    const nonExistentUrl = '/assets/sprites/nonexistent-test-404.png';
 
     try {
       await withRetry(
         async () => {
           attempts404++;
-          await fetchJson(nonExistentUrl);
+          throw new HttpError(404, 'Not Found', '/assets/sprites/nonexistent-test-404.png');
         },
         { attempts: 3, baseMs: 40 }
       );

@@ -12,7 +12,7 @@ import { setupCanvas } from './render/canvas.js';
 import { drawBackground, drawWorld, drawHud } from './render/draw.js';
 import { loadAll } from './assets/loader.js';
 import { drawLoadingScreen } from './render/loading.js';
-import { setupAudio } from './audio.js';
+import { setupAudio, getSharedAudioContext } from './audio.js';
 import { Lobby } from './lobby/lobby.js';
 import { setupLobbyUI } from './lobby/lobby-ui.js';
 import {
