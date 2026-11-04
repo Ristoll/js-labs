@@ -2,6 +2,7 @@ import { Entity } from './entity.js';
 import { Vector2 } from './vector.js';
 import { Bullet } from './bullet.js';
 import { HomingComponent } from './homing.js';
+import { simEvents } from './events.js';
 
 /**
  * Ship physics configuration constants.
@@ -82,6 +83,17 @@ export class Ship extends Entity {
   }
 
   /**
+   * Restores ship health points up to maximum (default: 3).
+   * Leaves velocity, momentum, and timers unaffected.
+   * @param {number} [amount=3] Health points to restore
+   * @returns {number} Current health points
+   */
+  heal(amount = 3) {
+    this.#hp = Math.min(3, this.#hp + amount);
+    return this.#hp;
+  }
+
+  /**
    * Resets ship state for safe respawn.
    * @param {number} x
    * @param {number} y
@@ -140,6 +152,8 @@ export class Ship extends Entity {
     if (world && typeof world.spawn === 'function') {
       world.spawn(bullet);
     }
+
+    simEvents.dispatchEvent(new CustomEvent('fired', { detail: { shipId: this.id } }));
 
     return bullet;
   }

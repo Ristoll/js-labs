@@ -10,11 +10,17 @@ import { findCollisions, resolveCollisions } from './sim/collision.js';
 import { Vector2 } from './sim/vector.js';
 import { setupCanvas } from './render/canvas.js';
 import { drawBackground, drawWorld, drawHud } from './render/draw.js';
+import { loadAll } from './assets/loader.js';
+import { drawLoadingScreen } from './render/loading.js';
+import { setupAudio, getSharedAudioContext } from './audio.js';
+import { Lobby } from './lobby/lobby.js';
+import { setupLobbyUI } from './lobby/lobby-ui.js';
 import {
   toggleExperiment1,
   toggleExperiment2,
   toggleExperiment3,
   runExperiment3Measurement,
+  setupM1ExperimentUI,
 } from './experiments.js';
 
 // 1. Setup Canvas and Viewport
@@ -273,7 +279,7 @@ const loop = createLoop({
     drawBackground(ctx, arena.width, arena.height, performance.now());
 
     // 2. Interpolated world entities (player ship, laser bullets, asteroids, explosions)
-    drawWorld(ctx, world, previousWorld, alpha, arena);
+    drawWorld(ctx, world, previousWorld, alpha, arena, gameAssets?.sprites);
 
     // 3. Performance & Combat telemetry HUD (score, HP, steps/s, frames/s, frame ms)
     drawHud(ctx, {
@@ -287,8 +293,86 @@ const loop = createLoop({
   },
 });
 
-// Start the game loop
-loop.start();
+// 5. Asynchronous Asset Loading & Loading Screen (Milestone 1)
+export let gameAssets = null;
+
+async function initGame() {
+  drawLoadingScreen(ctx, arena.width, arena.height, {
+    progress: 0,
+    statusText: 'Connecting to asset server...',
+  });
+
+  try {
+    gameAssets = await loadAll('/assets/manifest.json', {
+      onProgress: (progress, info) => {
+        drawLoadingScreen(ctx, arena.width, arena.height, {
+          progress,
+          statusText: `Loaded ${info.key} (${info.done}/${info.total})`,
+        });
+      },
+    });
+
+    drawLoadingScreen(ctx, arena.width, arena.height, {
+      progress: 1.0,
+      statusText: 'All assets loaded! Starting simulation...',
+    });
+
+    // Wire audio module to simulation events (after assets are decoded)
+    setupAudio(gameAssets);
+
+    // M3 — Show lobby; start game only after player joins.
+    await showLobbyAndWaitForJoin();
+
+    // Start simulation loop once assets are ready and player has joined
+    loop.start();
+  } catch (err) {
+    console.error('Failed to load assets:', err);
+    drawLoadingScreen(ctx, arena.width, arena.height, {
+      progress: 0,
+      error: err,
+      statusText: 'Asset loading failed.',
+    });
+
+    // Interactive retry listener
+    const retryHandler = () => {
+      window.removeEventListener('keydown', keyHandler);
+      canvasElement.removeEventListener('click', retryHandler);
+      initGame();
+    };
+    const keyHandler = (e) => {
+      if (e.code === 'Space' || e.code === 'KeyR') {
+        retryHandler();
+      }
+    };
+    window.addEventListener('keydown', keyHandler, { once: true });
+    canvasElement.addEventListener('click', retryHandler, { once: true });
+  }
+}
+
+/**
+ * Shows the lobby screen and returns a Promise that resolves when the player
+ * clicks "Join" on a room. Stops the Lobby's periodic refresh (abort-on-leave)
+ * the moment the player commits.
+ *
+ * @returns {Promise<{ room: Object, playerName: string }>}
+ */
+function showLobbyAndWaitForJoin() {
+  const lobby = new Lobby();
+  const lobbyUI = setupLobbyUI(lobby);
+
+  lobbyUI.show();
+  lobby.start(); // begins periodic refresh with AbortSignal.timeout per request
+
+  return new Promise((resolve) => {
+    lobby.addEventListener('joined', (e) => {
+      // lobby.join() already called lobby.stop() — no orphaned requests
+      lobbyUI.hide();
+      resolve(e.detail);
+    });
+  });
+}
+
+initGame();
 
 // Milestone 4 Experiments (Results printed in Console)
 const btn1 = document.getElementById('btn-exp-1');
@@ -318,3 +402,6 @@ btn3Throt?.addEventListener('click', () =>
     testControls,
   })
 );
+
+// Lab 03 — Milestone 1 Experiment Panel
+setupM1ExperimentUI();

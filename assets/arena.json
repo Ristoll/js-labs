@@ -1,0 +1,7 @@
+{
+  "name": "Deep Space Arena",
+  "width": 1200,
+  "height": 800,
+  "maxAsteroids": 6,
+  "theme": "deep-space"
+}
