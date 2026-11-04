@@ -13,7 +13,7 @@
     <div id="lobby-screen" class="hidden">
       <div class="lobby-card">
         <div class="lobby-header">
-          <span class="lobby-badge">LAB 03 // M3</span>
+          <span class="lobby-badge">LAB 04 // MULTIPLAYER</span>
           <h1 class="lobby-title">DOGFIGHT</h1>
           <p class="lobby-subtitle">Select a room and enter your pilot name to join.</p>
         </div>
@@ -38,6 +38,20 @@
         </ul>
 
         <p class="lobby-footer-hint">Rooms refresh every 5 s · Leaving cancels in-flight request</p>
+      </div>
+    </div>
+
+    <!-- Multiplayer In-Game HUD: Roster & Chat Overlay -->
+    <div id="multiplayer-hud" class="hidden">
+      <div id="roster-panel">
+        <div class="hud-panel-title">PILOTS IN SECTOR</div>
+        <ul id="roster-list"></ul>
+      </div>
+      <div id="chat-panel">
+        <div id="chat-messages"></div>
+        <form id="chat-form">
+          <input id="chat-input" type="text" placeholder="Type a message (Enter)..." maxlength="200" autocomplete="off" />
+        </form>
       </div>
     </div>
 

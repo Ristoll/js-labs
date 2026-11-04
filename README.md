@@ -261,3 +261,104 @@ Sequential total time ≈ `∑ tᵢ` (sum of all assets).
 
 Cache-busting via `?_cb=<timestamp>` ensures real network round-trips for both measurements.
 
+
+
+---
+
+# Lab 04 — Node.js: HTTP Server, Streams, WebSockets, and Architecture
+
+## 1. Node.js Event Loop Phases & Asynchronous Scheduling
+
+The Node.js event loop is powered by `libuv`. It processes tasks through distinct phases:
+1. **Timers:** Executes callbacks scheduled by `setTimeout()` and `setInterval()`.
+2. **Pending Callbacks:** Executes I/O callbacks deferred to the next loop iteration (e.g., specific network errors).
+3. **Idle, Prepare:** Internal libuv phases used only internally.
+4. **Poll:** Retrieves new I/O events (network connections, reading sockets, file events); executes I/O-related callbacks. Node will block here when no other timers or tasks are scheduled.
+5. **Check:** Executes callbacks registered with `setImmediate()`.
+6. **Close Callbacks:** Executes close callbacks, such as `socket.on('close', ...)`.
+
+### Microtasks: `process.nextTick` vs Promises
+- **`process.nextTick`:** NOT part of the libuv event loop. The `nextTickQueue` is processed **immediately** after the current synchronous operation finishes, before yielding to any other phase or the Promise microtask queue.
+- **Promise Reactions (`.then`, `await`):** Microtasks scheduled on the V8 microtask queue, executed immediately after `nextTickQueue` drains.
+- **`setTimeout(fn, 0)` vs `setImmediate(fn)`:**
+  - `setTimeout(fn, 0)` is handled in the **Timers** phase.
+  - `setImmediate(fn)` is handled in the **Check** phase.
+  - Inside an I/O callback (e.g. `fs.readFile`), `setImmediate` is guaranteed to run *before* any `setTimeout(fn, 0)` because the Check phase follows the Poll phase directly.
+
+### Blocking Operations & libuv Thread Pool
+Node.js executes JavaScript on a single thread. However, asynchronous operations such as `fs.*`, `crypto.*`, and DNS lookups are offloaded to libuv's worker thread pool (`UV_THREADPOOL_SIZE`, default 4 threads). Synchronous operations (e.g. `fs.readFileSync`, busy `while` loops, heavy encryption or JSON parsing) block the JavaScript main thread, starving the event loop and preventing any incoming HTTP requests or WebSocket packets from being handled.
+
+### Observed Impact of `/api/slow` (300 ms Synchronous Block)
+We implemented `/api/slow` which executes a tight 300 ms busy-wait loop.
+**Observations:**
+- While `/api/slow` is running, concurrent `GET /health` requests stall completely and take > 300 ms to respond.
+- WebSocket ping/pong and chat broadcasting in `Room` are blocked during the 300 ms window, increasing message latency and triggering potential heartbeat jitter.
+- This demonstrates why CPU-intensive tasks must be delegated to worker threads (`worker_threads`) or child processes.
+
+---
+
+## 2. CommonJS (CJS) vs ECMAScript Modules (ESM)
+
+| Feature | CommonJS (CJS) | ES Modules (ESM) |
+| :--- | :--- | :--- |
+| **Syntax** | `require()`, `module.exports` | `import`, `export` |
+| **Loading** | Synchronous, dynamic (evaluated at runtime) | Asynchronous, static parsing & tree-shaking |
+| **Top-Level Await** | No (requires wrapping in async IIFE) | Supported natively |
+| **Scope variables** | `__dirname`, `__filename`, `module`, `exports` | Not defined (use `import.meta.url`, `fileURLToPath`) |
+| **Native Imports** | `require('node:fs')` or `require('fs')` | `import fs from 'node:fs'` (explicit `node:` protocol recommended) |
+
+In this project, both `client/` and `server/` use native ES Modules (`"type": "module"` in `package.json`), clean `node:*` specifiers, and `fileURLToPath(import.meta.url)` to construct paths safely.
+
+---
+
+## 3. Node.js Streams & Backpressure
+
+Node.js offers 4 stream types:
+- **Readable:** Sources of data (e.g., `fs.createReadStream`, `req`).
+- **Writable:** Destinations for data (e.g., `fs.createWriteStream`, `res`).
+- **Duplex:** Both Readable and Writable (e.g., net socket).
+- **Transform:** Duplex streams where output is computed from input (e.g., `zlib.createGzip`, `MatchLogTransform`).
+
+### Backpressure & `pipeline()`
+When a fast data source feeds a slow consumer (e.g., reading a file from SSD at 500 MB/s to send over a 20 Mbps cellular connection), unbuffered piping (`readStream.pipe(res)`) can result in unbounded RAM accumulation in memory buffers if errors occur or streams detach.
+
+`stream.pipeline()` solves this by:
+1. Automatically managing backpressure: when `res.write(chunk)` returns `false`, `readStream.pause()` is called until `res` emits `drain`.
+2. Properly destroying all streams in the pipeline if any stream emits an error or closes prematurely.
+3. Preventing file descriptor leaks.
+
+### Autonomous Backpressure Experiment Results
+We ran an autonomous experiment downloading a synthetic **205.00 MB** NDJSON match log (`synth-200mb.ndjson`) over `GET /api/replays/synth-200mb` against a rate-limited slow client:
+- **File size:** 205.00 MB (214,958,307 bytes)
+- **Transfer duration:** 6.41 s
+- **Average throughput:** 255.93 Mbps
+- **Initial Server RSS:** 55.50 MB
+- **Peak Server RSS:** 121.18 MB
+- **Final Server RSS:** 79.57 MB
+- **Maximum RSS Growth:** 65.68 MB (Bounded; no OOM crash)
+
+Artifacts saved:
+- CSV: `server/benchmarks/backpressure-results.csv`
+- Graph: `server/benchmarks/backpressure-rss.png`
+- Detailed Report: `server/benchmarks/backpressure-report.md`
+
+---
+
+## 4. WebSocket Architecture & Reliability (M2 & M4)
+
+### Handshake
+HTTP/1.1 client sends an `Upgrade: websocket` request with `Sec-WebSocket-Key`. The server computes the SHA-1 hash of the key plus a magic GUID, replying with HTTP status `101 Switching Protocols` and `Sec-WebSocket-Accept`. Once established, full-duplex binary/text framing replaces HTTP request-response.
+
+### Decoupled Room Architecture (`EventEmitter`)
+- `Room` inherits from Node's built-in `EventEmitter`.
+- Emits domain events: `'join'`, `'leave'`, `'chat'`, and `'empty'`.
+- `MatchLogTransform` (objectMode Transform stream) listens to events and streams NDJSON match logs to disk with zero tight coupling to network sockets.
+- `RoomManager` observes `'empty'` to automatically clean up abandoned rooms and prune memory.
+
+### Reliability & Abuse Protection
+1. **Token Bucket Rate Limiting:** Every connected socket has an independent `TokenBucket` (capacity 20, refill rate 10 tokens/sec), dropping burst spam and returning `{ type: "error", payload: { message: "Rate limit exceeded" } }`.
+2. **Payload Size Limit:** Inbound messages exceeding `config.maxPayloadSize` (64 KB) are rejected and closed with code `1009`.
+3. **5-Second Join Timeout:** Unauthenticated sockets that fail to join a room within 5 seconds are closed with code `4001`.
+4. **Heartbeat (Ping/Pong):** Every 15 seconds, the server sends `ping`. Sockets missing 2 consecutive pings are terminated.
+5. **Slow Client Protection:** Sockets accumulating > 1 MB in `ws.bufferedAmount` are closed with code `1008` to protect server memory.
+6. **Graceful Shutdown:** On `SIGINT`/`SIGTERM`, existing WebSocket clients are closed with code `1001` (Going away), rooms are flushed, and the HTTP server closes cleanly without dropping in-flight responses.
