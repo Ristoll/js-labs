@@ -29,6 +29,9 @@ export class Room extends EventEmitter {
     this.fileWriteStream = null;
     this._pipelinePromise = null;
     this._isClosed = false;
+    this._logQueue = [];
+    this._isFlushingLogQueue = false;
+    this._logBackpressure = false;
 
     this._initMatchLog();
   }
@@ -40,6 +43,23 @@ export class Room extends EventEmitter {
       this.logFile = path.join(this.replaysDir, `${this.id}.ndjson`);
       this.transformStream = new MatchLogTransform({ roomId: this.id });
       this.fileWriteStream = fs.createWriteStream(this.logFile, { flags: 'a' });
+
+      // Handle stream errors
+      this.transformStream.on('error', (err) => {
+        console.error(`[Room ${this.id}] MatchLogTransform stream error:`, err);
+        this.emit('error', err);
+      });
+
+      this.fileWriteStream.on('error', (err) => {
+        console.error(`[Room ${this.id}] Match log fileWriteStream error:`, err);
+        this.emit('error', err);
+      });
+
+      // Handle backpressure resumption
+      this.transformStream.on('drain', () => {
+        this._logBackpressure = false;
+        this._flushLogQueue();
+      });
 
       // Use pipeline() for robust match log writing with error handling
       this._pipelinePromise = new Promise((resolve, reject) => {
@@ -63,13 +83,65 @@ export class Room extends EventEmitter {
     }
   }
 
+  /**
+   * Logs an event with backpressure respect.
+   * If the stream's write buffer is full (write() returns false), subsequent events
+   * are queued and flushed once the stream emits 'drain'.
+   */
   logEvent(type, data) {
-    if (this.transformStream && !this.transformStream.destroyed && !this.transformStream.writableEnded) {
-      this.transformStream.write({
-        type,
-        timestamp: Date.now(),
-        data,
-      });
+    if (this._isClosed) return;
+    const event = {
+      type,
+      timestamp: Date.now(),
+      data,
+    };
+
+    if (!this.transformStream || this.transformStream.destroyed || this.transformStream.writableEnded) {
+      return;
+    }
+
+    if (this._logBackpressure || this._logQueue.length > 0) {
+      // Respect backpressure: buffer in memory queue until 'drain'
+      if (this._logQueue.length < 5000) {
+        this._logQueue.push(event);
+      } else {
+        console.warn(`[Room ${this.id}] Match log queue full (5000 items), dropping event ${type}`);
+      }
+      return;
+    }
+
+    try {
+      const canWriteMore = this.transformStream.write(event);
+      if (!canWriteMore) {
+        this._logBackpressure = true;
+      }
+    } catch (err) {
+      console.error(`[Room ${this.id}] Error writing event to match log:`, err);
+    }
+  }
+
+  _flushLogQueue() {
+    if (this._isFlushingLogQueue) return;
+    this._isFlushingLogQueue = true;
+
+    try {
+      while (this._logQueue.length > 0 && !this._logBackpressure) {
+        if (!this.transformStream || this.transformStream.destroyed || this.transformStream.writableEnded) {
+          this._logQueue.length = 0;
+          break;
+        }
+
+        const nextEvent = this._logQueue.shift();
+        const canWriteMore = this.transformStream.write(nextEvent);
+        if (!canWriteMore) {
+          this._logBackpressure = true;
+          break;
+        }
+      }
+    } catch (err) {
+      console.error(`[Room ${this.id}] Error flushing log queue:`, err);
+    } finally {
+      this._isFlushingLogQueue = false;
     }
   }
 
@@ -215,8 +287,25 @@ export class Room extends EventEmitter {
   async close() {
     if (this._isClosed) return;
     this._isClosed = true;
-    this.logEvent('room_closed', { roomId: this.id });
+
+    // Flush any pending events in queue before ending stream
+    if (this._logQueue.length > 0 && this.transformStream && !this.transformStream.destroyed) {
+      while (this._logQueue.length > 0) {
+        const item = this._logQueue.shift();
+        try {
+          this.transformStream.write(item);
+        } catch {}
+      }
+    }
+
     if (this.transformStream && !this.transformStream.destroyed && !this.transformStream.writableEnded) {
+      try {
+        this.transformStream.write({
+          type: 'room_closed',
+          timestamp: Date.now(),
+          data: { roomId: this.id },
+        });
+      } catch {}
       this.transformStream.end();
     }
     if (this._pipelinePromise) {

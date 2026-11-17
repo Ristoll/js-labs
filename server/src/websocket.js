@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { TokenBucket } from './rate-limiter.js';
+import { validateMessage, WS_CLOSE_CODES } from './protocol.js';
 
 export function setupWebSocket(server, roomManager, config) {
   // Pass maxPayload directly into WebSocketServer options
@@ -93,6 +94,7 @@ export function setupWebSocket(server, roomManager, config) {
       try {
         message = JSON.parse(data.toString());
       } catch {
+        console.warn('[WS] Malformed JSON rejected from socket');
         ws.send(
           JSON.stringify({
             v: 1,
@@ -100,45 +102,22 @@ export function setupWebSocket(server, roomManager, config) {
             payload: { message: 'Invalid JSON' },
           })
         );
-        ws.close(1007, 'Invalid JSON payload');
+        ws.close(WS_CLOSE_CODES.INVALID_PAYLOAD, 'Invalid JSON payload');
         return;
       }
 
-      // 3. Strict protocol validation
-      if (!message || typeof message !== 'object') {
+      // 3. Strict schema & version validation
+      const validation = validateMessage(message);
+      if (!validation.valid) {
+        console.warn(`[WS] Invalid message rejected: ${validation.error}`);
         ws.send(
           JSON.stringify({
             v: 1,
             type: 'error',
-            payload: { message: 'Message must be an object' },
+            payload: { message: validation.error },
           })
         );
-        ws.close(1002, 'Protocol violation');
-        return;
-      }
-
-      if (message.v !== 1) {
-        ws.send(
-          JSON.stringify({
-            v: 1,
-            type: 'error',
-            payload: { message: `Unsupported protocol version: ${message.v}` },
-          })
-        );
-        ws.close(1002, 'Unsupported protocol version');
-        return;
-      }
-
-      const knownTypes = ['join', 'chat', 'leave'];
-      if (!message.type || typeof message.type !== 'string' || !knownTypes.includes(message.type)) {
-        ws.send(
-          JSON.stringify({
-            v: 1,
-            type: 'error',
-            payload: { message: `Unknown or invalid message type: ${message.type}` },
-          })
-        );
-        ws.close(1002, 'Unknown message type');
+        ws.close(validation.code || WS_CLOSE_CODES.PROTOCOL_ERROR, validation.error);
         return;
       }
 
@@ -156,6 +135,7 @@ export function setupWebSocket(server, roomManager, config) {
             break;
         }
       } catch (err) {
+        console.error(`[WS] Error dispatching ${message.type}:`, err.message);
         ws.send(
           JSON.stringify({
             v: 1,
@@ -183,15 +163,7 @@ export function setupWebSocket(server, roomManager, config) {
       throw new Error('Already joined a room');
     }
 
-    if (!payload || typeof payload !== 'object' || !payload.roomId || typeof payload.roomId !== 'string') {
-      throw new Error('Missing or invalid roomId in payload');
-    }
-
     const roomId = String(payload.roomId).trim();
-    if (!roomId) {
-      throw new Error('roomId cannot be empty');
-    }
-
     let room = roomManager.getRoom(roomId);
 
     if (!room) {
@@ -237,9 +209,6 @@ export function setupWebSocket(server, roomManager, config) {
   function handleChat(ws, payload) {
     if (!ws.joinedRoom) {
       throw new Error('Not in a room');
-    }
-    if (!payload || typeof payload !== 'object' || typeof payload.text !== 'string' || !payload.text.trim()) {
-      throw new Error('Invalid chat text');
     }
 
     const text = String(payload.text).trim().slice(0, 500); // 500 char chat limit

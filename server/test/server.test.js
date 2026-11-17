@@ -9,6 +9,8 @@ import { TokenBucket } from '../src/rate-limiter.js';
 import { MatchLogTransform, NDJSONParserTransform } from '../src/streams.js';
 import { createReplayGenerator } from '../src/replay.js';
 import { loadConfig } from '../src/config.js';
+import { validateMessage, WS_CLOSE_CODES } from '../src/protocol.js';
+import { Room } from '../src/room.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const testReplaysDir = path.join(__dirname, 'temp-replays');
@@ -103,8 +105,14 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
     });
 
     test('Path traversal is blocked with 403', async () => {
-      const res = await fetch(`${serverUrl}/..%2f..%2fpackage.json`);
-      assert.equal(res.status, 403);
+      const res1 = await fetch(`${serverUrl}/..%2f..%2fpackage.json`);
+      assert.equal(res1.status, 403);
+
+      const res2 = await fetch(`${serverUrl}/%2e%2e%2f%2e%2e%2fpackage.json`);
+      assert.equal(res2.status, 403);
+
+      const res3 = await fetch(`${serverUrl}/..%5c..%5cpackage.json`);
+      assert.equal(res3.status, 403);
     });
 
     test('GET /api/slow synchronously blocks for ~300ms', async () => {
@@ -213,6 +221,27 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
         client.on('close', (code) => resolve({ code }));
       });
       assert.equal(closeEvent.code, 1002);
+    });
+
+    test('Rejects invalid payload with close code 1007', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+
+      // Missing roomId in join
+      client.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: '' } }));
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code) => resolve({ code }));
+      });
+      assert.equal(closeEvent.code, 1007);
+    });
+
+    test('Protocol validator unit tests validateMessage()', () => {
+      assert.equal(validateMessage(null).valid, false);
+      assert.equal(validateMessage('string').valid, false);
+      assert.equal(validateMessage({ v: 2, type: 'join', payload: { roomId: 'r1' } }).code, WS_CLOSE_CODES.PROTOCOL_ERROR);
+      assert.equal(validateMessage({ v: 1, type: 'chat', payload: { text: '' } }).code, WS_CLOSE_CODES.INVALID_PAYLOAD);
+      assert.equal(validateMessage({ v: 1, type: 'chat', payload: { text: 'Hello' } }).valid, true);
+      assert.equal(validateMessage({ v: 1, type: 'leave' }).valid, true);
     });
 
     test('Rejects malformed JSON with close code 1007', async () => {
@@ -348,6 +377,29 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       assert.equal(items.length, 2);
       assert.equal(items[0].step, 1);
       assert.equal(items[1].action, 'fire');
+    });
+
+    test('Room respects writable backpressure when logging match events', async () => {
+      const room = new Room({
+        id: 'backpressure-test-room',
+        name: 'Backpressure Room',
+        replaysDir: testReplaysDir,
+      });
+
+      // Rapidly log 100 events
+      for (let i = 0; i < 100; i++) {
+        room.logEvent('game_tick', { tick: i, state: 'active' });
+      }
+
+      await room.close();
+
+      // Read back file and confirm all events were flushed and written
+      const content = fs.readFileSync(path.join(testReplaysDir, 'backpressure-test-room.ndjson'), 'utf-8');
+      const lines = content.trim().split('\n').filter(Boolean);
+      // room_created + 100 ticks + room_closed = 102 lines
+      assert.equal(lines.length, 102);
+      assert.ok(lines[0].includes('room_created'));
+      assert.ok(lines[lines.length - 1].includes('room_closed'));
     });
 
     test('GET /api/replays/:id streams replay file with backpressure and handles disconnect', async () => {

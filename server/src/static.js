@@ -22,20 +22,36 @@ const MIME_TYPES = {
  * Protects against path traversal attacks.
  */
 export function serveStatic(req, res, rootDir) {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const rawUrl = req.url || '/';
+  if (rawUrl.includes('..') || rawUrl.includes('%2e%2e') || rawUrl.includes('%2E%2E')) {
+    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Forbidden: Path traversal detected' }));
+    return true;
+  }
+
+  const url = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
   let pathname = decodeURIComponent(url.pathname);
 
   if (pathname === '/') {
     pathname = '/index.html';
   }
 
-  // Path traversal protection
-  const safePath = path.normalize(path.join(rootDir, pathname));
-  if (!safePath.startsWith(path.normalize(rootDir))) {
+  // Reliable path containment check:
+  // Resolve both rootDir and requested path to absolute canonical paths
+  const resolvedRoot = path.resolve(rootDir);
+  const resolvedTarget = path.resolve(resolvedRoot, '.' + path.sep + pathname.replace(/^[/\\]+/, ''));
+
+  // Ensure target path starts with rootDir plus separator, or equals rootDir
+  const relative = path.relative(resolvedRoot, resolvedTarget);
+  const isContained = !relative.startsWith('..') && !path.isAbsolute(relative);
+
+  if (!isContained) {
     res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ error: 'Forbidden: Path traversal detected' }));
     return true;
   }
+
+  const safePath = resolvedTarget;
 
   let stat;
   try {

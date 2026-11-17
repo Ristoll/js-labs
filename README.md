@@ -299,6 +299,49 @@ We implemented `/api/slow` which executes a tight 300 ms busy-wait loop (`const 
 - **`EventEmitter` Error Events:** An `EventEmitter` instance (such as our `Room` class) has special behavior for the `'error'` event. If `'error'` is emitted and there are no registered listeners (`room.on('error', ...)`), Node.js treats this as a fatal unhandled error, prints a stack trace, and crashes the Node.js process unless caught by `process.on('uncaughtException')`. Always attach an `'error'` listener to long-lived EventEmitters or wrap streams with `stream.pipeline()` which manages error event forwarding automatically.
 - **Promise Rejections:** An unhandled promise rejection triggers `process.on('unhandledRejection')`. In modern Node.js versions (v15+), unhandled promise rejections terminate the process with a non-zero exit code by default (`--unhandled-rejections=throw`), making rigorous `try/catch` wrapping and error propagation mandatory for all async routes.
 
+#### Concrete Example: Unhandled Rejection Bug & Fix
+
+**Buggy Code (Crashes process on async error):**
+```js
+// An async operation without catch or pipeline error handling
+function saveMatchLogAsync(room) {
+  // If the promise rejects or the stream fails, this promise rejection is unhandled
+  return new Promise((resolve, reject) => {
+    fs.createReadStream('missing-log.ndjson')
+      .pipe(fs.createWriteStream('/protected/destination.ndjson')); // .pipe does NOT forward destruction or promise reject
+  });
+}
+
+// In route or timer:
+saveMatchLogAsync(room); // -> triggers UnhandledPromiseRejection, crashing Node.js v16+
+```
+
+**Fixed Code (Robust pipeline + async/await error propagation):**
+```js
+import { pipeline } from 'node:stream/promises';
+
+async function saveMatchLogAsync(room) {
+  try {
+    await pipeline(
+      fs.createReadStream('source-log.ndjson'),
+      fs.createWriteStream('destination.ndjson')
+    );
+  } catch (err) {
+    console.error(`[Room ${room.id}] Failed to save match log:`, err);
+    // Explicitly handle or rethrow to a known caller with try/catch
+    throw new Error(`MatchLogSaveFailed: ${err.message}`);
+  }
+}
+
+// In caller:
+try {
+  await saveMatchLogAsync(room);
+} catch (err) {
+  res.writeHead(500, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: err.message }));
+}
+```
+
 ---
 
 ## 2. CommonJS (CJS) vs ECMAScript Modules (ESM)
