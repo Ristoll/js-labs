@@ -2,7 +2,11 @@ import { WebSocketServer } from 'ws';
 import { TokenBucket } from './rate-limiter.js';
 
 export function setupWebSocket(server, roomManager, config) {
-  const wss = new WebSocketServer({ noServer: true });
+  // Pass maxPayload directly into WebSocketServer options
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: config.maxPayloadSize,
+  });
 
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -55,15 +59,15 @@ export function setupWebSocket(server, roomManager, config) {
       ws.missedPings = 0;
     });
 
-    // 5-second join timeout: Client must send a valid 'join' message within 5s
+    // 5-second join timeout: Client must send a valid 'join' message within joinTimeoutMs
     const joinTimeout = setTimeout(() => {
       if (!ws.joinedRoom) {
-        console.warn('[WS] Client failed to join room within 5s timeout, closing connection.');
+        console.warn('[WS] Client failed to join room within timeout, closing connection.');
         ws.send(
           JSON.stringify({
             v: 1,
             type: 'error',
-            payload: { message: 'Join timeout exceeded (5s limit)' },
+            payload: { message: 'Join timeout exceeded' },
           })
         );
         ws.close(4001, 'Join timeout');
@@ -71,20 +75,7 @@ export function setupWebSocket(server, roomManager, config) {
     }, config.joinTimeoutMs);
 
     ws.on('message', (data) => {
-      // 1. Payload size check
-      if (data.length > config.maxPayloadSize) {
-        ws.send(
-          JSON.stringify({
-            v: 1,
-            type: 'error',
-            payload: { message: 'Payload size exceeded' },
-          })
-        );
-        ws.close(1009, 'Message too big');
-        return;
-      }
-
-      // 2. Token-bucket rate limiting
+      // 1. Rate limiting check - close connection on abuse (code 1008 Policy Violation)
       if (!ws.rateLimiter.tryConsume(1)) {
         ws.send(
           JSON.stringify({
@@ -93,10 +84,11 @@ export function setupWebSocket(server, roomManager, config) {
             payload: { message: 'Rate limit exceeded' },
           })
         );
+        ws.close(1008, 'Rate limit exceeded');
         return;
       }
 
-      // 3. Message parsing & validation
+      // 2. Message parsing
       let message;
       try {
         message = JSON.parse(data.toString());
@@ -108,21 +100,49 @@ export function setupWebSocket(server, roomManager, config) {
             payload: { message: 'Invalid JSON' },
           })
         );
+        ws.close(1007, 'Invalid JSON payload');
         return;
       }
 
-      if (!message || typeof message !== 'object' || message.v !== 1 || !message.type) {
+      // 3. Strict protocol validation
+      if (!message || typeof message !== 'object') {
         ws.send(
           JSON.stringify({
             v: 1,
             type: 'error',
-            payload: { message: 'Invalid protocol version or missing type' },
+            payload: { message: 'Message must be an object' },
           })
         );
+        ws.close(1002, 'Protocol violation');
         return;
       }
 
-      // Dispatch handlers
+      if (message.v !== 1) {
+        ws.send(
+          JSON.stringify({
+            v: 1,
+            type: 'error',
+            payload: { message: `Unsupported protocol version: ${message.v}` },
+          })
+        );
+        ws.close(1002, 'Unsupported protocol version');
+        return;
+      }
+
+      const knownTypes = ['join', 'chat', 'leave'];
+      if (!message.type || typeof message.type !== 'string' || !knownTypes.includes(message.type)) {
+        ws.send(
+          JSON.stringify({
+            v: 1,
+            type: 'error',
+            payload: { message: `Unknown or invalid message type: ${message.type}` },
+          })
+        );
+        ws.close(1002, 'Unknown message type');
+        return;
+      }
+
+      // 4. Dispatch handlers
       try {
         switch (message.type) {
           case 'join':
@@ -134,14 +154,6 @@ export function setupWebSocket(server, roomManager, config) {
           case 'leave':
             handleLeave(ws);
             break;
-          default:
-            ws.send(
-              JSON.stringify({
-                v: 1,
-                type: 'error',
-                payload: { message: `Unknown message type: ${message.type}` },
-              })
-            );
         }
       } catch (err) {
         ws.send(
@@ -171,15 +183,18 @@ export function setupWebSocket(server, roomManager, config) {
       throw new Error('Already joined a room');
     }
 
-    if (!payload || !payload.roomId) {
-      throw new Error('Missing roomId in payload');
+    if (!payload || typeof payload !== 'object' || !payload.roomId || typeof payload.roomId !== 'string') {
+      throw new Error('Missing or invalid roomId in payload');
     }
 
-    const roomId = String(payload.roomId);
+    const roomId = String(payload.roomId).trim();
+    if (!roomId) {
+      throw new Error('roomId cannot be empty');
+    }
+
     let room = roomManager.getRoom(roomId);
 
     if (!room) {
-      // If room doesn't exist, create it if room creation allowed
       room = roomManager.createRoom({
         id: roomId,
         name: payload.roomName || `Sector ${roomId}`,
@@ -223,7 +238,7 @@ export function setupWebSocket(server, roomManager, config) {
     if (!ws.joinedRoom) {
       throw new Error('Not in a room');
     }
-    if (!payload || typeof payload.text !== 'string' || !payload.text.trim()) {
+    if (!payload || typeof payload !== 'object' || typeof payload.text !== 'string' || !payload.text.trim()) {
       throw new Error('Invalid chat text');
     }
 

@@ -12,6 +12,7 @@ export function createServer(customConfig = {}) {
     maxRooms: mergedConfig.maxRooms,
     defaultMaxPlayers: mergedConfig.maxPlayersPerRoom,
     replaysDir: mergedConfig.replaysDir,
+    maxBufferedAmount: mergedConfig.maxBufferedAmount,
   });
 
   // Pre-populate some default rooms for lobbies if empty
@@ -43,7 +44,7 @@ export function createServer(customConfig = {}) {
   const wss = setupWebSocket(server, roomManager, mergedConfig);
 
   let isClosing = false;
-  function shutdown() {
+  async function shutdown() {
     if (isClosing) return;
     isClosing = true;
     console.log('\n[Server] Graceful shutdown initiated...');
@@ -58,24 +59,29 @@ export function createServer(customConfig = {}) {
     }
     wss.close();
 
-    // Close all rooms and match log streams
-    roomManager.closeAll();
+    // Close all rooms and flush match log streams
+    await roomManager.closeAll();
 
     // Close HTTP server
-    server.close(() => {
-      console.log('[Server] HTTP server closed cleanly.');
-      process.exit(0);
+    return new Promise((resolve) => {
+      server.close(() => {
+        console.log('[Server] HTTP server closed cleanly.');
+        resolve();
+      });
     });
-
-    // Force close after 5 seconds if lingering connections exist
-    setTimeout(() => {
-      console.error('[Server] Forcing shutdown after timeout.');
-      process.exit(1);
-    }, 5000).unref();
   }
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  const onSigint = async () => {
+    await shutdown();
+    process.exit(0);
+  };
+  const onSigterm = async () => {
+    await shutdown();
+    process.exit(0);
+  };
+
+  process.once('SIGINT', onSigint);
+  process.once('SIGTERM', onSigterm);
 
   return { server, wss, roomManager, config: mergedConfig, shutdown };
 }

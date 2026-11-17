@@ -6,11 +6,13 @@ export class RoomManager {
    * @param {number} [options.maxRooms=100]
    * @param {number} [options.defaultMaxPlayers=4]
    * @param {string} [options.replaysDir]
+   * @param {number} [options.maxBufferedAmount=1048576]
    */
-  constructor({ maxRooms = 100, defaultMaxPlayers = 4, replaysDir = null } = {}) {
+  constructor({ maxRooms = 100, defaultMaxPlayers = 4, replaysDir = null, maxBufferedAmount = 1048576 } = {}) {
     this.maxRooms = maxRooms;
     this.defaultMaxPlayers = defaultMaxPlayers;
     this.replaysDir = replaysDir;
+    this.maxBufferedAmount = maxBufferedAmount;
     this.rooms = new Map(); // id -> Room
   }
 
@@ -29,6 +31,7 @@ export class RoomManager {
       name: name || `Sector ${roomId}`,
       maxPlayers: maxPlayers || this.defaultMaxPlayers,
       replaysDir: this.replaysDir,
+      maxBufferedAmount: this.maxBufferedAmount,
     });
 
     // Automatically remove room when all players leave
@@ -44,10 +47,10 @@ export class RoomManager {
     return this.rooms.get(id);
   }
 
-  deleteRoom(id) {
+  async deleteRoom(id) {
     const room = this.rooms.get(id);
     if (room) {
-      room.close();
+      await room.close();
       this.rooms.delete(id);
       return true;
     }
@@ -58,10 +61,12 @@ export class RoomManager {
     return Array.from(this.rooms.values()).map((r) => r.toJSON());
   }
 
-  closeAll() {
+  async closeAll() {
+    const closePromises = [];
     for (const room of this.rooms.values()) {
-      room.close();
+      closePromises.push(room.close());
     }
+    await Promise.all(closePromises);
     this.rooms.clear();
   }
 }

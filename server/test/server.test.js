@@ -1,6 +1,5 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +7,8 @@ import WebSocket from 'ws';
 import { createServer } from '../src/server.js';
 import { TokenBucket } from '../src/rate-limiter.js';
 import { MatchLogTransform, NDJSONParserTransform } from '../src/streams.js';
+import { createReplayGenerator } from '../src/replay.js';
+import { loadConfig } from '../src/config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const testReplaysDir = path.join(__dirname, 'temp-replays');
@@ -20,12 +21,18 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
   before(async () => {
     fs.mkdirSync(testReplaysDir, { recursive: true });
     app = createServer({
-      port: 0, // OS assigned random port
+      port: 0,
       host: '127.0.0.1',
       replaysDir: testReplaysDir,
-      joinTimeoutMs: 1000, // fast timeout for tests
-      heartbeatIntervalMs: 500,
+      joinTimeoutMs: 800,
+      heartbeatIntervalMs: 400,
       heartbeatMaxMissed: 2,
+      maxPayloadSize: 1024, // 1KB for testing
+      rateLimitCapacity: 5,
+      rateLimitRefillRate: 1,
+      maxRooms: 5,
+      maxPlayersPerRoom: 2,
+      maxBufferedAmount: 2048, // 2KB for testing slow client
     });
 
     await new Promise((resolve) => {
@@ -39,14 +46,24 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
   });
 
   after(async () => {
-    await new Promise((resolve) => {
-      app.wss.close(() => {
-        app.server.close(() => {
-          resolve();
-        });
-      });
-    });
+    await app.shutdown();
     fs.rmSync(testReplaysDir, { recursive: true, force: true });
+  });
+
+  describe('Configuration Validation (M1)', () => {
+    test('loadConfig validates environment variables strictly', () => {
+      assert.throws(
+        () => loadConfig({ PORT: 'invalid' }),
+        /must be between 0 and 65535/
+      );
+      assert.throws(
+        () => loadConfig({ MAX_PAYLOAD_SIZE: '-5' }),
+        /must be a positive integer/
+      );
+      const valid = loadConfig({ PORT: '4000', MAX_ROOMS: '50' });
+      assert.equal(valid.port, 4000);
+      assert.equal(valid.maxRooms, 50);
+    });
   });
 
   describe('HTTP Server & API (M1)', () => {
@@ -67,7 +84,6 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
     });
 
     test('POST /api/rooms creates a new room with validation', async () => {
-      // 1. Invalid payload
       const badRes = await fetch(`${serverUrl}/api/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +91,6 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       });
       assert.equal(badRes.status, 400);
 
-      // 2. Valid room creation
       const validRes = await fetch(`${serverUrl}/api/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,7 +116,7 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
     });
   });
 
-  describe('WebSocket Protocol & Rooms (M2 & M4)', () => {
+  describe('WebSocket Protocol & Security (M2 & M4)', () => {
     test('Two clients can join room, receive roster, and exchange chat', async () => {
       const client1 = new WebSocket(wsUrl);
       const client2 = new WebSocket(wsUrl);
@@ -111,7 +126,6 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
         new Promise((r) => client2.on('open', r)),
       ]);
 
-      // Client 1 joins test-room
       client1.send(
         JSON.stringify({
           v: 1,
@@ -128,7 +142,6 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       });
       assert.equal(client1Joined.playerName, 'Alice');
 
-      // Client 2 joins test-room
       client2.send(
         JSON.stringify({
           v: 1,
@@ -137,7 +150,6 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
         })
       );
 
-      // Client 1 should receive roster update containing Bob
       const rosterUpdate = await new Promise((resolve) => {
         client1.on('message', (raw) => {
           const msg = JSON.parse(raw.toString());
@@ -148,7 +160,6 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       });
       assert.equal(rosterUpdate.players.length, 2);
 
-      // Client 2 sends chat, client 1 receives it
       client2.send(
         JSON.stringify({
           v: 1,
@@ -182,18 +193,121 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       assert.equal(closeEvent.code, 4001);
     });
 
-    test('TokenBucket rate limiter throttles burst messages', () => {
-      const bucket = new TokenBucket(5, 5); // 5 capacity, 5 refill/sec
-      for (let i = 0; i < 5; i++) {
-        assert.equal(bucket.tryConsume(1), true);
+    test('Rejects invalid protocol version with close code 1002', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+
+      client.send(JSON.stringify({ v: 999, type: 'join', payload: { roomId: 'foo' } }));
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code) => resolve({ code }));
+      });
+      assert.equal(closeEvent.code, 1002);
+    });
+
+    test('Rejects unknown message type with close code 1002', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+
+      client.send(JSON.stringify({ v: 1, type: 'hack_the_planet', payload: {} }));
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code) => resolve({ code }));
+      });
+      assert.equal(closeEvent.code, 1002);
+    });
+
+    test('Rejects malformed JSON with close code 1007', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+
+      client.send('this is not json');
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code) => resolve({ code }));
+      });
+      assert.equal(closeEvent.code, 1007);
+    });
+
+    test('Closes connection with code 1008 when rate limits are exceeded', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+
+      client.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'rate-room', playerName: 'Spammer' } }));
+
+      // Send 10 messages rapidly (capacity is 5)
+      for (let i = 0; i < 10; i++) {
+        client.send(JSON.stringify({ v: 1, type: 'chat', payload: { text: `Spam ${i}` } }));
       }
-      // 6th consume should fail immediately
-      assert.equal(bucket.tryConsume(1), false);
+
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code, reason) => resolve({ code, reason: reason.toString() }));
+      });
+      assert.equal(closeEvent.code, 1008);
+      assert.ok(closeEvent.reason.includes('Rate limit exceeded'));
+    });
+
+    test('Enforces maximum payload size directly on WebSocket server', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+
+      // maxPayloadSize is 1024 bytes; send 2KB
+      const hugePayload = 'X'.repeat(2048);
+      client.send(hugePayload);
+
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code) => resolve({ code }));
+      });
+      // ws library terminates oversized frame with code 1009 (Message too big)
+      assert.equal(closeEvent.code, 1009);
+    });
+
+    test('Enforces room player limits', async () => {
+      const c1 = new WebSocket(wsUrl);
+      const c2 = new WebSocket(wsUrl);
+      const c3 = new WebSocket(wsUrl);
+
+      await Promise.all([
+        new Promise((r) => c1.on('open', r)),
+        new Promise((r) => c2.on('open', r)),
+        new Promise((r) => c3.on('open', r)),
+      ]);
+
+      c1.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P1' } }));
+      c2.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P2' } }));
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      c3.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P3' } }));
+
+      const errMessage = await new Promise((resolve) => {
+        c3.on('message', (raw) => {
+          const msg = JSON.parse(raw.toString());
+          if (msg.type === 'error') resolve(msg.payload.message);
+        });
+      });
+      assert.equal(errMessage, 'Room is full');
+
+      c1.close();
+      c2.close();
+      c3.close();
+    });
+
+    test('Terminates client missing heartbeats', async () => {
+      const client = new WebSocket(wsUrl);
+      await new Promise((r) => client.on('open', r));
+      client.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'hb-room', playerName: 'Unresponsive' } }));
+
+      // Block client from answering ping
+      client.pong = () => {};
+
+      const closeEvent = await new Promise((resolve) => {
+        client.on('close', (code) => resolve({ code }));
+      });
+      // Forced termination closes socket without normal close handshake
+      assert.ok(closeEvent);
     });
   });
 
-  describe('Streams & Replays (M3)', () => {
-    test('MatchLogTransform serializes events into NDJSON', async () => {
+  describe('Streams, Match Logs & Replay Generator (M3)', () => {
+    test('MatchLogTransform serializes events into NDJSON with pipeline()', async () => {
       const transform = new MatchLogTransform({ roomId: 'test-stream' });
       const chunks = [];
       transform.on('data', (c) => chunks.push(c.toString()));
@@ -223,7 +337,20 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       assert.equal(objects[1].event, 'two');
     });
 
-    test('GET /api/replays/:id streams replay file with backpressure', async () => {
+    test('createReplayGenerator asynchronously yields events from NDJSON file', async () => {
+      const sampleFile = path.join(testReplaysDir, 'gen-test.ndjson');
+      fs.writeFileSync(sampleFile, '{"step":1,"action":"thrust"}\n{"step":2,"action":"fire"}\n');
+
+      const items = [];
+      for await (const event of createReplayGenerator(sampleFile)) {
+        items.push(event);
+      }
+      assert.equal(items.length, 2);
+      assert.equal(items[0].step, 1);
+      assert.equal(items[1].action, 'fire');
+    });
+
+    test('GET /api/replays/:id streams replay file with backpressure and handles disconnect', async () => {
       const dummyFile = path.join(testReplaysDir, 'sample-match.ndjson');
       fs.writeFileSync(dummyFile, '{"type":"start"}\n{"type":"end"}\n');
 

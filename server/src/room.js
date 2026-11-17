@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pipeline } from 'node:stream';
 import { MatchLogTransform } from './streams.js';
 
 export class Room extends EventEmitter {
@@ -10,20 +11,25 @@ export class Room extends EventEmitter {
    * @param {string} options.name
    * @param {number} [options.maxPlayers=4]
    * @param {string} [options.replaysDir]
+   * @param {number} [options.maxBufferedAmount=1048576]
    */
-  constructor({ id, name, maxPlayers = 4, replaysDir = null }) {
+  constructor({ id, name, maxPlayers = 4, replaysDir = null, maxBufferedAmount = 1048576 }) {
     super();
     this.id = id;
     this.name = name;
     this.maxPlayers = maxPlayers;
+    this.maxBufferedAmount = maxBufferedAmount;
     this.createdAt = Date.now();
     this.players = new Map(); // id -> { id, name, ws, joinedAt }
     this.replaysDir = replaysDir;
 
     // Set up match log streaming if replaysDir is provided
     this.logFile = null;
-    this.logStream = null;
     this.transformStream = null;
+    this.fileWriteStream = null;
+    this._pipelinePromise = null;
+    this._isClosed = false;
+
     this._initMatchLog();
   }
 
@@ -34,7 +40,18 @@ export class Room extends EventEmitter {
       this.logFile = path.join(this.replaysDir, `${this.id}.ndjson`);
       this.transformStream = new MatchLogTransform({ roomId: this.id });
       this.fileWriteStream = fs.createWriteStream(this.logFile, { flags: 'a' });
-      this.transformStream.pipe(this.fileWriteStream);
+
+      // Use pipeline() for robust match log writing with error handling
+      this._pipelinePromise = new Promise((resolve, reject) => {
+        pipeline(this.transformStream, this.fileWriteStream, (err) => {
+          if (err) {
+            console.error(`[Room ${this.id}] Match log pipeline error:`, err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
 
       this.logEvent('room_created', {
         roomId: this.id,
@@ -109,17 +126,21 @@ export class Room extends EventEmitter {
     return player;
   }
 
+  _safeSend(ws, player, payload) {
+    if (!ws || ws.readyState !== 1) return; // 1 = OPEN
+    if (ws.bufferedAmount > this.maxBufferedAmount) {
+      console.warn(`[Room ${this.id}] Client ${player.name} buffer bloated (${ws.bufferedAmount} bytes), terminating slow client.`);
+      ws.close(1008, 'Slow client buffer exceeded');
+      return;
+    }
+    ws.send(payload);
+  }
+
   broadcast(message, senderWs = null) {
     const payload = typeof message === 'string' ? message : JSON.stringify(message);
     for (const player of this.players.values()) {
-      if (player.ws && player.ws !== senderWs && player.ws.readyState === 1) { // 1 = OPEN
-        // Slow-client backpressure check
-        if (player.ws.bufferedAmount > 1048576) { // 1MB threshold
-          console.warn(`[Room ${this.id}] Client ${player.name} buffer bloated (${player.ws.bufferedAmount}), dropping or disconnecting`);
-          player.ws.close(1008, 'Slow client buffer exceeded');
-          continue;
-        }
-        player.ws.send(payload);
+      if (player.ws && player.ws !== senderWs) {
+        this._safeSend(player.ws, player, payload);
       }
     }
   }
@@ -140,12 +161,9 @@ export class Room extends EventEmitter {
       },
     };
 
-    // Broadcast to ALL players in the room
     const payload = JSON.stringify(message);
     for (const player of this.players.values()) {
-      if (player.ws && player.ws.readyState === 1) {
-        player.ws.send(payload);
-      }
+      this._safeSend(player.ws, player, payload);
     }
   }
 
@@ -165,7 +183,6 @@ export class Room extends EventEmitter {
       text,
     });
 
-    // Broadcast chat to all players in the room
     const chatMsg = {
       v: 1,
       type: 'chat',
@@ -179,9 +196,7 @@ export class Room extends EventEmitter {
 
     const payload = JSON.stringify(chatMsg);
     for (const player of this.players.values()) {
-      if (player.ws && player.ws.readyState === 1) {
-        player.ws.send(payload);
-      }
+      this._safeSend(player.ws, player, payload);
     }
   }
 
@@ -197,12 +212,15 @@ export class Room extends EventEmitter {
     };
   }
 
-  close() {
+  async close() {
     if (this._isClosed) return;
     this._isClosed = true;
     this.logEvent('room_closed', { roomId: this.id });
     if (this.transformStream && !this.transformStream.destroyed && !this.transformStream.writableEnded) {
       this.transformStream.end();
+    }
+    if (this._pipelinePromise) {
+      await this._pipelinePromise.catch(() => {});
     }
   }
 }

@@ -12,3 +12,17 @@
 {"type":"player_left","timestamp":1793809449401,"data":{"playerId":"player-mw2btxgp-peyu","name":"Phoenix","reason":""}}
 {"type":"player_left","timestamp":1793809449401,"data":{"playerId":"player-mw2btxgo-67c6","name":"Viper","reason":""}}
 {"type":"room_closed","timestamp":1793809449401,"data":{"roomId":"sector-4"}}
+{"type":"room_created","timestamp":1794917161550,"data":{"roomId":"sector-4","name":"Sector sector-4","maxPlayers":4}}
+{"type":"player_joined","timestamp":1794917161550,"data":{"playerId":"player-mwknc1n2-i1kx","name":"Viper"}}
+{"type":"player_joined","timestamp":1794917161551,"data":{"playerId":"player-mwknc1n3-3m0i","name":"Phoenix"}}
+{"type":"chat","timestamp":1794917161553,"data":{"playerId":"player-mwknc1n2-i1kx","name":"Viper","text":"Engaging targets!"}}
+{"type":"player_left","timestamp":1794917161558,"data":{"playerId":"player-mwknc1n3-3m0i","name":"Phoenix","reason":""}}
+{"type":"player_left","timestamp":1794917161558,"data":{"playerId":"player-mwknc1n2-i1kx","name":"Viper","reason":""}}
+{"type":"room_closed","timestamp":1794917161558,"data":{"roomId":"sector-4"}}
+{"type":"room_created","timestamp":1794917421195,"data":{"roomId":"sector-4","name":"Sector sector-4","maxPlayers":4}}
+{"type":"player_joined","timestamp":1794917421195,"data":{"playerId":"player-mwknhlzf-zo1c","name":"Viper"}}
+{"type":"player_joined","timestamp":1794917421196,"data":{"playerId":"player-mwknhlzg-5tj6","name":"Phoenix"}}
+{"type":"chat","timestamp":1794917421197,"data":{"playerId":"player-mwknhlzf-zo1c","name":"Viper","text":"Engaging targets!"}}
+{"type":"player_left","timestamp":1794917421202,"data":{"playerId":"player-mwknhlzg-5tj6","name":"Phoenix","reason":""}}
+{"type":"player_left","timestamp":1794917421202,"data":{"playerId":"player-mwknhlzf-zo1c","name":"Viper","reason":""}}
+{"type":"room_closed","timestamp":1794917421203,"data":{"roomId":"sector-4"}}
