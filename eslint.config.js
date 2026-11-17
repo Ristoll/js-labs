@@ -3,6 +3,11 @@ import js from '@eslint/js';
 export default [
   js.configs.recommended,
   {
+    ignores: ['**/dist/**', '**/node_modules/**', '**/temp-replays/**', 'client/dist/**'],
+  },
+  // Client source files (browser environment)
+  {
+    files: ['client/src/**/*.js', 'src/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -28,28 +33,45 @@ export default [
         DOMException: 'readonly',
         AbortController: 'readonly',
         AbortSignal: 'readonly',
+        EventTarget: 'readonly',
+        CustomEvent: 'readonly',
+        MutationObserver: 'readonly',
+        WebSocket: 'readonly',
+        location: 'readonly',
         globalThis: 'readonly',
       },
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-console': 'off',
     },
   },
+  // Server, benchmark, scripts, and test files (Node.js environment)
   {
-    files: ['scripts/**/*.js', 'vite.config.js'],
+    files: ['server/**/*.js', 'scripts/**/*.js', 'vite.config.js'],
     languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         process: 'readonly',
         Buffer: 'readonly',
         URL: 'readonly',
-        AbortController: 'readonly',
         fetch: 'readonly',
+        performance: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        console: 'readonly',
         globalThis: 'readonly',
       },
     },
-  },
-  {
-    ignores: ['dist/', 'node_modules/'],
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-console': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
   },
 ];

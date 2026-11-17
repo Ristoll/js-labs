@@ -218,17 +218,18 @@ function showLobbyAndWaitForJoin() {
 
 Всі головоломки написані вручну, перевірені в браузерній консолі.
 
-| # | Теми | Результат |
-|---|---|---|
-| 1 | `Promise.resolve().then` vs `setTimeout(..., 0)` | microtask перед macrotask: `C B A` |
-| 2 | `await null` — призупинення навіть без Promise | async suspension: `1 3 2` |
-| 3 | `setTimeout` всередині `.then` | внутрішній timeout ставиться в чергу пізніше зовнішнього: `m1 m2 outer-timeout timeout-inside-then` |
-| 4 | `requestAnimationFrame` після мікрозавдань | rAF — після мікрочерги, перед фреймом: `sync microtask rAF` |
-| 5 | `Promise.all` vs sequential `await` із `performance.now()` | паралельно ~300 ms, послідовно ~600 ms |
+| #   | Теми                                                       | Результат                                                                                           |
+| --- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1   | `Promise.resolve().then` vs `setTimeout(..., 0)`           | microtask перед macrotask: `C B A`                                                                  |
+| 2   | `await null` — призупинення навіть без Promise             | async suspension: `1 3 2`                                                                           |
+| 3   | `setTimeout` всередині `.then`                             | внутрішній timeout ставиться в чергу пізніше зовнішнього: `m1 m2 outer-timeout timeout-inside-then` |
+| 4   | `requestAnimationFrame` після мікрозавдань                 | rAF — після мікрочерги, перед фреймом: `sync microtask rAF`                                         |
+| 5   | `Promise.all` vs sequential `await` із `performance.now()` | паралельно ~300 ms, послідовно ~600 ms                                                              |
 
 Кожна головоломка містить: код, очікуваний вивід, одне речення пояснення.
 
 Виконані вимоги:
+
 - ✅ Мінімум одна з `await` (Puzzle 2)
 - ✅ Мінімум одна з `setTimeout` всередині `.then` (Puzzle 3)
 - ✅ Мінімум одна з `requestAnimationFrame` (Puzzle 4)
@@ -237,12 +238,12 @@ function showLobbyAndWaitForJoin() {
 
 Чотири сценарії збоїв, кожен описано з кодовим шляхом та логом консолі:
 
-| Збій | Механізм відтворення | Поведінка | Відновлення |
-|---|---|---|---|
-| **404 спрайт** | Неіснуючий URL | `HttpError` після 1 спроби (без retry — правило 4xx) | Червоний progress bar + кнопка retry |
-| **Мережевий таймаут** | `?delay=5000` > 4 s timeout | `TimeoutError` → 3 retry з backoff → провал | Retry UI |
-| **Abort під час завантаження** | `controller.abort()` після 50 ms | `AbortError` → негайно без retry | Retry UI |
-| **Пошкоджений JSON** | PNG-файл через JSON-loader | `SyntaxError` при `response.json()` → 3 retry → провал | Retry UI |
+| Збій                           | Механізм відтворення             | Поведінка                                              | Відновлення                          |
+| ------------------------------ | -------------------------------- | ------------------------------------------------------ | ------------------------------------ |
+| **404 спрайт**                 | Неіснуючий URL                   | `HttpError` після 1 спроби (без retry — правило 4xx)   | Червоний progress bar + кнопка retry |
+| **Мережевий таймаут**          | `?delay=5000` > 4 s timeout      | `TimeoutError` → 3 retry з backoff → провал            | Retry UI                             |
+| **Abort під час завантаження** | `controller.abort()` після 50 ms | `AbortError` → негайно без retry                       | Retry UI                             |
+| **Пошкоджений JSON**           | PNG-файл через JSON-loader       | `SyntaxError` при `response.json()` → 3 retry → провал | Retry UI                             |
 
 ### 3. Git tag `lab-03`
 

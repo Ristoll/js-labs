@@ -88,4 +88,3 @@ export function setupAudio(gameAssets) {
     playBuffer(sounds.explosion);
   });
 }
-
