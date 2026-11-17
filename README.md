@@ -1,5 +1,3 @@
-# Lab 03 — Asynchronous JavaScript: Promises, async/await, and the Loading Screen
-
 > _"A promise is a placeholder for a value you don't have yet, plus a contract about how you'll be told."_
 
 ---
