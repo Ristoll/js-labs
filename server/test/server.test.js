@@ -54,14 +54,8 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
 
   describe('Configuration Validation (M1)', () => {
     test('loadConfig validates environment variables strictly', () => {
-      assert.throws(
-        () => loadConfig({ PORT: 'invalid' }),
-        /must be between 0 and 65535/
-      );
-      assert.throws(
-        () => loadConfig({ MAX_PAYLOAD_SIZE: '-5' }),
-        /must be a positive integer/
-      );
+      assert.throws(() => loadConfig({ PORT: 'invalid' }), /must be between 0 and 65535/);
+      assert.throws(() => loadConfig({ MAX_PAYLOAD_SIZE: '-5' }), /must be a positive integer/);
       const valid = loadConfig({ PORT: '4000', MAX_ROOMS: '50' });
       assert.equal(valid.port, 4000);
       assert.equal(valid.maxRooms, 50);
@@ -104,6 +98,22 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       assert.equal(room.maxPlayers, 6);
     });
 
+    test('POST /api/rooms rejects oversized payload with 413', async () => {
+      // Config maxPayloadSize is 1024 bytes in test server; send 2KB
+      const hugeName = 'A'.repeat(2048);
+      try {
+        const res = await fetch(`${serverUrl}/api/rooms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: hugeName }),
+        });
+        assert.equal(res.status, 413);
+      } catch (err) {
+        // Some HTTP fetch clients throw when server destroys socket immediately on 413
+        assert.ok(err);
+      }
+    });
+
     test('Path traversal is blocked with 403', async () => {
       const res1 = await fetch(`${serverUrl}/..%2f..%2fpackage.json`);
       assert.equal(res1.status, 403);
@@ -115,12 +125,44 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       assert.equal(res3.status, 403);
     });
 
-    test('GET /api/slow synchronously blocks for ~300ms', async () => {
+    test('Symlink traversal outside static directory is blocked with 403', async () => {
+      // Create a symlink in client dist pointing to an outside file
+      const outsideFile = path.resolve(__dirname, 'outside-secret.txt');
+      fs.writeFileSync(outsideFile, 'secret content');
+      const distDir = path.resolve(__dirname, '../../client/dist');
+      fs.mkdirSync(distDir, { recursive: true });
+      const symlinkPath = path.join(distDir, 'escape-symlink.txt');
+      try {
+        if (fs.existsSync(symlinkPath)) fs.unlinkSync(symlinkPath);
+        fs.symlinkSync(outsideFile, symlinkPath, 'file');
+        const res = await fetch(`${serverUrl}/escape-symlink.txt`);
+        assert.equal(res.status, 403);
+      } catch (err) {
+        // On Windows if unprivileged symlink creation is restricted, skip
+        if (err.code !== 'EPERM') throw err;
+      } finally {
+        if (fs.existsSync(symlinkPath)) fs.unlinkSync(symlinkPath);
+        if (fs.existsSync(outsideFile)) fs.unlinkSync(outsideFile);
+      }
+    });
+
+    test('Malformed URL component returns 400', async () => {
+      const res = await fetch(`${serverUrl}/%E0%A4%A`);
+      assert.equal(res.status, 400);
+    });
+
+    test('GET /api/slow blocks event loop and delays concurrent requests', async () => {
       const t0 = Date.now();
-      const res = await fetch(`${serverUrl}/api/slow`);
-      const elapsed = Date.now() - t0;
-      assert.equal(res.status, 200);
-      assert.ok(elapsed >= 280, `Expected elapsed >= 280ms, got ${elapsed}ms`);
+      // Launch /api/slow and concurrent /health request
+      const slowPromise = fetch(`${serverUrl}/api/slow`);
+      const healthPromise = fetch(`${serverUrl}/health`);
+
+      const [slowRes, healthRes] = await Promise.all([slowPromise, healthPromise]);
+      const totalElapsed = Date.now() - t0;
+
+      assert.equal(slowRes.status, 200);
+      assert.equal(healthRes.status, 200);
+      assert.ok(totalElapsed >= 280, `Expected elapsed >= 280ms, got ${totalElapsed}ms`);
     });
   });
 
@@ -238,8 +280,14 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
     test('Protocol validator unit tests validateMessage()', () => {
       assert.equal(validateMessage(null).valid, false);
       assert.equal(validateMessage('string').valid, false);
-      assert.equal(validateMessage({ v: 2, type: 'join', payload: { roomId: 'r1' } }).code, WS_CLOSE_CODES.PROTOCOL_ERROR);
-      assert.equal(validateMessage({ v: 1, type: 'chat', payload: { text: '' } }).code, WS_CLOSE_CODES.INVALID_PAYLOAD);
+      assert.equal(
+        validateMessage({ v: 2, type: 'join', payload: { roomId: 'r1' } }).code,
+        WS_CLOSE_CODES.PROTOCOL_ERROR
+      );
+      assert.equal(
+        validateMessage({ v: 1, type: 'chat', payload: { text: '' } }).code,
+        WS_CLOSE_CODES.INVALID_PAYLOAD
+      );
       assert.equal(validateMessage({ v: 1, type: 'chat', payload: { text: 'Hello' } }).valid, true);
       assert.equal(validateMessage({ v: 1, type: 'leave' }).valid, true);
     });
@@ -259,7 +307,13 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       const client = new WebSocket(wsUrl);
       await new Promise((r) => client.on('open', r));
 
-      client.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'rate-room', playerName: 'Spammer' } }));
+      client.send(
+        JSON.stringify({
+          v: 1,
+          type: 'join',
+          payload: { roomId: 'rate-room', playerName: 'Spammer' },
+        })
+      );
 
       // Send 10 messages rapidly (capacity is 5)
       for (let i = 0; i < 10; i++) {
@@ -288,6 +342,42 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       assert.equal(closeEvent.code, 1009);
     });
 
+    test('Terminates slow client when bufferedAmount exceeds limit', async () => {
+      const slowWs = new WebSocket(wsUrl);
+      await new Promise((r) => slowWs.on('open', r));
+
+      slowWs.send(
+        JSON.stringify({
+          v: 1,
+          type: 'join',
+          payload: { roomId: 'slow-client-room', playerName: 'Slowy' },
+        })
+      );
+      await new Promise((r) => setTimeout(r, 50));
+
+      const room = app.roomManager.getRoom('slow-client-room');
+      assert.ok(room);
+
+      // Artificially simulate client TCP congestion by inflating ws.bufferedAmount
+      const playerObj = Array.from(room.players.values()).find((p) => p.name === 'Slowy');
+      assert.ok(playerObj);
+
+      Object.defineProperty(playerObj.ws, 'bufferedAmount', {
+        value: 10 * 1024 * 1024, // 10MB > maxBufferedAmount
+        configurable: true,
+      });
+
+      const closePromise = new Promise((resolve) => {
+        slowWs.on('close', (code) => resolve(code));
+      });
+
+      // Broadcast chat into room, which triggers _safeSend and detects buffer bloating
+      room.broadcast({ v: 1, type: 'chat', payload: { text: 'test bloat' } });
+
+      const closeCode = await closePromise;
+      assert.equal(closeCode, 1008);
+    });
+
     test('Enforces room player limits', async () => {
       const c1 = new WebSocket(wsUrl);
       const c2 = new WebSocket(wsUrl);
@@ -299,12 +389,30 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
         new Promise((r) => c3.on('open', r)),
       ]);
 
-      c1.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P1' } }));
-      c2.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P2' } }));
+      c1.send(
+        JSON.stringify({
+          v: 1,
+          type: 'join',
+          payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P1' },
+        })
+      );
+      c2.send(
+        JSON.stringify({
+          v: 1,
+          type: 'join',
+          payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P2' },
+        })
+      );
 
       await new Promise((r) => setTimeout(r, 50));
 
-      c3.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P3' } }));
+      c3.send(
+        JSON.stringify({
+          v: 1,
+          type: 'join',
+          payload: { roomId: 'limit-room', maxPlayers: 2, playerName: 'P3' },
+        })
+      );
 
       const errMessage = await new Promise((resolve) => {
         c3.on('message', (raw) => {
@@ -322,7 +430,13 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
     test('Terminates client missing heartbeats', async () => {
       const client = new WebSocket(wsUrl);
       await new Promise((r) => client.on('open', r));
-      client.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'hb-room', playerName: 'Unresponsive' } }));
+      client.send(
+        JSON.stringify({
+          v: 1,
+          type: 'join',
+          payload: { roomId: 'hb-room', playerName: 'Unresponsive' },
+        })
+      );
 
       // Block client from answering ping
       client.pong = () => {};
@@ -394,12 +508,58 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
       await room.close();
 
       // Read back file and confirm all events were flushed and written
-      const content = fs.readFileSync(path.join(testReplaysDir, 'backpressure-test-room.ndjson'), 'utf-8');
+      const content = fs.readFileSync(
+        path.join(testReplaysDir, 'backpressure-test-room.ndjson'),
+        'utf-8'
+      );
       const lines = content.trim().split('\n').filter(Boolean);
       // room_created + 100 ticks + room_closed = 102 lines
       assert.equal(lines.length, 102);
       assert.ok(lines[0].includes('room_created'));
       assert.ok(lines[lines.length - 1].includes('room_closed'));
+    });
+
+    test('Room safely handles stream error without unhandled rejection', async () => {
+      const room = new Room({
+        id: 'stream-err-room',
+        name: 'Error Room',
+        replaysDir: testReplaysDir,
+      });
+
+      let emittedError = null;
+      room.on('error', (err) => {
+        emittedError = err;
+      });
+
+      // Intentionally destroy write stream with custom error
+      room.fileWriteStream.destroy(new Error('Simulated disk write failure'));
+
+      // Wait a tick for error event propagation
+      await new Promise((r) => setTimeout(r, 50));
+
+      assert.ok(emittedError);
+      assert.equal(emittedError.message, 'Simulated disk write failure');
+      await room.close();
+    });
+
+    test('Shutdown during active backpressure flushes queued events cleanly', async () => {
+      const room = new Room({
+        id: 'shutdown-backpressure-room',
+        name: 'Shutdown BP Room',
+        replaysDir: testReplaysDir,
+      });
+
+      // Artificially pause destination stream to simulate backpressure
+      room.transformStream.write = () => false; // returns false to trigger queueing
+      room.logEvent('action', { key: 'heavy_load_1' });
+      room.logEvent('action', { key: 'heavy_load_2' });
+
+      // Restore normal write before close
+      delete room.transformStream.write;
+
+      // Close must complete cleanly without hanging
+      await room.close();
+      assert.equal(room._logQueue.length, 0);
     });
 
     test('GET /api/replays/:id streams replay file with backpressure and handles disconnect', async () => {

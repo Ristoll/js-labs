@@ -23,7 +23,7 @@ export async function* createReplayGenerator(filePath) {
         try {
           yield JSON.parse(trimmed);
         } catch (err) {
-          throw new Error(`Corrupt NDJSON record: ${err.message}`);
+          throw new Error(`Corrupt NDJSON record: ${err.message}`, { cause: err });
         }
       }
     }
@@ -32,4 +32,3 @@ export async function* createReplayGenerator(filePath) {
     fileStream.destroy();
   }
 }
-

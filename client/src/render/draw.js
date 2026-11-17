@@ -242,7 +242,14 @@ export function drawBackground(ctx, width, height, timeMs = 0) {
  * When a sprite HTMLImageElement is supplied, draws it via drawImage (centered, rotated).
  * Falls back to the vector art when no sprite is available.
  */
-export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena = null, sprite = null) {
+export function drawShip(
+  ctx,
+  currentShip,
+  previousShip = null,
+  alpha = 1,
+  arena = null,
+  sprite = null
+) {
   let x = currentShip.x;
   let y = currentShip.y;
   let angle = currentShip.angle;
@@ -389,7 +396,14 @@ export function drawShip(ctx, currentShip, previousShip = null, alpha = 1, arena
  * When a sprite HTMLImageElement is supplied, draws it via drawImage.
  * Falls back to the vector laser bolt when no sprite is available.
  */
-export function drawBullet(ctx, currentBullet, previousBullet = null, alpha = 1, arena = null, sprite = null) {
+export function drawBullet(
+  ctx,
+  currentBullet,
+  previousBullet = null,
+  alpha = 1,
+  arena = null,
+  sprite = null
+) {
   let x = currentBullet.x;
   let y = currentBullet.y;
 
@@ -661,7 +675,14 @@ export function drawPickup(ctx, currentPickup, previousPickup = null, alpha = 1,
  * @param {Object|null} arena Arena dimensions { width, height }
  * @param {Object|null} sprites Optional sprite map { ship, bullet, asteroid } from gameAssets
  */
-export function drawWorld(ctx, world, previousWorld = null, alpha = 1, arena = null, sprites = null) {
+export function drawWorld(
+  ctx,
+  world,
+  previousWorld = null,
+  alpha = 1,
+  arena = null,
+  sprites = null
+) {
   for (const entity of world) {
     const prev = previousWorld ? previousWorld.get(entity.id) : null;
     if (entity.kind === 'bullet') {

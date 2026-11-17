@@ -8,7 +8,12 @@ export class RoomManager {
    * @param {string} [options.replaysDir]
    * @param {number} [options.maxBufferedAmount=1048576]
    */
-  constructor({ maxRooms = 100, defaultMaxPlayers = 4, replaysDir = null, maxBufferedAmount = 1048576 } = {}) {
+  constructor({
+    maxRooms = 100,
+    defaultMaxPlayers = 4,
+    replaysDir = null,
+    maxBufferedAmount = 1048576,
+  } = {}) {
     this.maxRooms = maxRooms;
     this.defaultMaxPlayers = defaultMaxPlayers;
     this.replaysDir = replaysDir;
@@ -21,7 +26,8 @@ export class RoomManager {
       throw new Error('Server room limit reached');
     }
 
-    const roomId = id || `room-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const roomId =
+      id || `room-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     if (this.rooms.has(roomId)) {
       throw new Error(`Room with id '${roomId}' already exists`);
     }
@@ -32,6 +38,11 @@ export class RoomManager {
       maxPlayers: maxPlayers || this.defaultMaxPlayers,
       replaysDir: this.replaysDir,
       maxBufferedAmount: this.maxBufferedAmount,
+    });
+
+    // Guard against unhandled error events crashing Node.js
+    room.on('error', (err) => {
+      console.error(`[RoomManager] Room '${roomId}' emitted error:`, err);
     });
 
     // Automatically remove room when all players leave

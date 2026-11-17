@@ -109,7 +109,9 @@ export function resolveCollisions(world, collisions, onEvent = null) {
           score: 100,
         });
       }
-      simEvents.dispatchEvent(new CustomEvent('exploded', { detail: { x: asteroid.x, y: asteroid.y } }));
+      simEvents.dispatchEvent(
+        new CustomEvent('exploded', { detail: { x: asteroid.x, y: asteroid.y } })
+      );
       continue;
     }
 

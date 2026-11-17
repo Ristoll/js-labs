@@ -40,10 +40,14 @@ describe('Lab 04 M2 Two Clients Live Verification', () => {
     ]);
 
     // Client 1 joins 'sector-4'
-    ws1.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'sector-4', playerName: 'Viper' } }));
+    ws1.send(
+      JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'sector-4', playerName: 'Viper' } })
+    );
 
     // Client 2 joins 'sector-4'
-    ws2.send(JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'sector-4', playerName: 'Phoenix' } }));
+    ws2.send(
+      JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'sector-4', playerName: 'Phoenix' } })
+    );
 
     // Verify Client 1 receives roster with both players
     const rosterForClient1 = await new Promise((resolve) => {

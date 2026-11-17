@@ -57,7 +57,10 @@ await new Promise((resolve, reject) => {
 // Query exact OS working set size (RSS) via wmic as external check
 function getOsRss(pid) {
   try {
-    const out = execSync(`wmic process where ProcessId=${pid} get WorkingSetSize /value`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const out = execSync(`wmic process where ProcessId=${pid} get WorkingSetSize /value`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
     const m = out.match(/WorkingSetSize=(\d+)/);
     return m ? parseInt(m[1], 10) : null;
   } catch {
@@ -67,9 +70,24 @@ function getOsRss(pid) {
 
 const osRss = getOsRss(serverPid);
 if (osRss && !initialServerRss) initialServerRss = osRss;
-console.log(`[Runner] Verified Initial Server RSS: ${(initialServerRss / 1024 / 1024).toFixed(2)} MB`);
+console.log(
+  `[Runner] Verified Initial Server RSS: ${(initialServerRss / 1024 / 1024).toFixed(2)} MB`
+);
 
 // 2. Spawn Download Client as separate Node.js process
+const benchmarkStart = Date.now();
+const measurements = [
+  {
+    elapsedMs: 0,
+    elapsedSec: '0.00',
+    serverPid,
+    rssBytes: initialServerRss,
+    rssMB: (initialServerRss / 1024 / 1024).toFixed(2),
+    downloadedBytes: 0,
+    downloadedMB: '0.00',
+    throughputMbps: '0.00',
+  },
+];
 console.log('[Runner] Spawning standalone throttled client process...');
 const clientProc = spawn('node', [clientScript, String(serverPort)], {
   stdio: ['ignore', 'pipe', 'pipe'],
@@ -97,16 +115,16 @@ clientProc.stdout.on('data', (chunk) => {
 });
 
 // 3. Coordinator polling loop: every 500ms measure server process specifically
-const measurements = [];
-const benchmarkStart = Date.now();
-
 const pollInterval = setInterval(() => {
   const elapsedMs = Date.now() - benchmarkStart;
   const elapsedSec = (elapsedMs / 1000).toFixed(2);
 
   // Exact RSS of the server process PID
   const currentServerRss = latestServerRss || getOsRss(serverPid) || initialServerRss;
-  const throughputMbps = elapsedMs > 0 ? ((clientDownloadedBytes * 8) / (elapsedMs / 1000 * 1024 * 1024)).toFixed(2) : '0.00';
+  const throughputMbps =
+    elapsedMs > 0
+      ? ((clientDownloadedBytes * 8) / ((elapsedMs / 1000) * 1024 * 1024)).toFixed(2)
+      : '0.00';
 
   measurements.push({
     elapsedMs,
@@ -138,12 +156,26 @@ const totalDurationSec = (totalTimeMs / 1000).toFixed(2);
 
 // Query final server RSS before closing
 const finalServerRss = latestServerRss || getOsRss(serverPid) || initialServerRss;
+const totalDownloadedMB = (clientDownloadedBytes / 1024 / 1024).toFixed(2);
+const avgThroughputMbps = ((clientDownloadedBytes * 8) / (totalDurationSec * 1024 * 1024)).toFixed(
+  2
+);
+
+measurements.push({
+  elapsedMs: totalTimeMs,
+  elapsedSec: totalDurationSec,
+  serverPid,
+  rssBytes: finalServerRss,
+  rssMB: (finalServerRss / 1024 / 1024).toFixed(2),
+  downloadedBytes: clientDownloadedBytes,
+  downloadedMB: totalDownloadedMB,
+  throughputMbps: avgThroughputMbps,
+});
+
 serverProc.kill();
 
 const peakRssBytes = Math.max(...measurements.map((m) => m.rssBytes), finalServerRss);
 const minRssBytes = Math.min(...measurements.map((m) => m.rssBytes), initialServerRss);
-const totalDownloadedMB = (clientDownloadedBytes / 1024 / 1024).toFixed(2);
-const avgThroughputMbps = ((clientDownloadedBytes * 8) / (totalDurationSec * 1024 * 1024)).toFixed(2);
 const peakRssMB = (peakRssBytes / 1024 / 1024).toFixed(2);
 const initialRssMB = (initialServerRss / 1024 / 1024).toFixed(2);
 const finalRssMB = (finalServerRss / 1024 / 1024).toFixed(2);
@@ -163,7 +195,8 @@ console.log(`Final Server RSS:       ${finalRssMB} MB`);
 console.log(`Maximum RSS Delta:      ${rssDeltaMB} MB`);
 
 // 4. Save CSV
-const csvHeader = 'elapsed_ms,elapsed_sec,server_pid,rss_bytes,rss_mb,downloaded_bytes,downloaded_mb,throughput_mbps\n';
+const csvHeader =
+  'elapsed_ms,elapsed_sec,server_pid,rss_bytes,rss_mb,downloaded_bytes,downloaded_mb,throughput_mbps\n';
 const csvRows = measurements
   .map(
     (m) =>
@@ -290,7 +323,9 @@ function generateBenchmarkGraph(data, outputPath, summary) {
     const rssMB = pt.rssBytes / 1024 / 1024;
 
     const px = Math.round(marginLeft + (tSec / maxTime) * plotWidth);
-    const py = Math.round(marginTop + plotHeight - ((rssMB - minRss) / (maxRss - minRss)) * plotHeight);
+    const py = Math.round(
+      marginTop + plotHeight - ((rssMB - minRss) / (maxRss - minRss)) * plotHeight
+    );
 
     if (prevX !== null) {
       drawLine(prevX, prevY, px, py, 74, 222, 128);

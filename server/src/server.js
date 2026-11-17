@@ -49,26 +49,33 @@ export function createServer(customConfig = {}) {
     isClosing = true;
     console.log('\n[Server] Graceful shutdown initiated...');
 
-    // Close WebSocket connections gracefully with code 1001 (Going away)
-    for (const ws of wss.clients) {
-      try {
-        ws.close(1001, 'Server shutting down');
-      } catch (e) {
-        ws.terminate();
-      }
-    }
-    wss.close();
-
-    // Close all rooms and flush match log streams
-    await roomManager.closeAll();
-
-    // Close HTTP server
-    return new Promise((resolve) => {
+    // 1. Stop accepting new incoming HTTP & WebSocket connections
+    await new Promise((resolve) => {
       server.close(() => {
-        console.log('[Server] HTTP server closed cleanly.');
+        console.log('[Server] HTTP server stopped accepting connections.');
         resolve();
       });
     });
+
+    // 2. Notify and close active WebSocket clients gracefully (code 1001 Going away)
+    for (const ws of wss.clients) {
+      try {
+        ws.close(1001, 'Server shutting down');
+      } catch (_e) {
+        ws.terminate();
+      }
+    }
+
+    await new Promise((resolve) => {
+      wss.close(() => {
+        console.log('[Server] WebSocket server closed.');
+        resolve();
+      });
+    });
+
+    // 3. Close all active rooms, flushing pending match log streams safely
+    await roomManager.closeAll();
+    console.log('[Server] All rooms closed and match logs flushed.');
   }
 
   const onSigint = async () => {

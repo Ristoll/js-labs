@@ -33,7 +33,8 @@ function writeNext() {
         vx: (eventIndex % 3) * 10,
         vy: (eventIndex % 4) * 10,
         hp: 3 - (eventIndex % 3),
-        payloadDetails: 'payload-padding-string-for-streaming-benchmark-purposes-1234567890-abcdefghijklmnopqrstuvwxyz',
+        payloadDetails:
+          'payload-padding-string-for-streaming-benchmark-purposes-1234567890-abcdefghijklmnopqrstuvwxyz',
       },
     };
 
@@ -48,7 +49,9 @@ function writeNext() {
     writeStream.once('drain', writeNext);
   } else {
     writeStream.end(() => {
-      console.log(`Successfully generated ${(writtenBytes / 1024 / 1024).toFixed(2)} MB (${writtenBytes} bytes, ${eventIndex} events).`);
+      console.log(
+        `Successfully generated ${(writtenBytes / 1024 / 1024).toFixed(2)} MB (${writtenBytes} bytes, ${eventIndex} events).`
+      );
     });
   }
 }

@@ -35,11 +35,23 @@ export function loadConfig(env = process.env) {
     ? path.resolve(process.cwd(), env.LOG_DIR)
     : path.resolve(__dirname, '../replays');
   const joinTimeoutMs = parsePositiveInt(env.JOIN_TIMEOUT_MS, 'JOIN_TIMEOUT_MS', 5000);
-  const heartbeatIntervalMs = parsePositiveInt(env.HEARTBEAT_INTERVAL_MS, 'HEARTBEAT_INTERVAL_MS', 15000);
+  const heartbeatIntervalMs = parsePositiveInt(
+    env.HEARTBEAT_INTERVAL_MS,
+    'HEARTBEAT_INTERVAL_MS',
+    15000
+  );
   const heartbeatMaxMissed = parsePositiveInt(env.HEARTBEAT_MAX_MISSED, 'HEARTBEAT_MAX_MISSED', 2);
   const rateLimitCapacity = parsePositiveInt(env.RATE_LIMIT_CAPACITY, 'RATE_LIMIT_CAPACITY', 20);
-  const rateLimitRefillRate = parsePositiveInt(env.RATE_LIMIT_REFILL_RATE, 'RATE_LIMIT_REFILL_RATE', 10);
-  const maxBufferedAmount = parsePositiveInt(env.MAX_BUFFERED_AMOUNT, 'MAX_BUFFERED_AMOUNT', 1048576);
+  const rateLimitRefillRate = parsePositiveInt(
+    env.RATE_LIMIT_REFILL_RATE,
+    'RATE_LIMIT_REFILL_RATE',
+    10
+  );
+  const maxBufferedAmount = parsePositiveInt(
+    env.MAX_BUFFERED_AMOUNT,
+    'MAX_BUFFERED_AMOUNT',
+    1048576
+  );
 
   return {
     port,

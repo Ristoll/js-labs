@@ -19,29 +19,54 @@ const MIME_TYPES = {
 
 /**
  * Serves a static file from rootDir securely.
- * Protects against path traversal attacks.
+ * Protects against path traversal attacks, malformed URLs, and symlink escapes.
  */
 export function serveStatic(req, res, rootDir) {
   const rawUrl = req.url || '/';
-  if (rawUrl.includes('..') || rawUrl.includes('%2e%2e') || rawUrl.includes('%2E%2E')) {
+
+  // 1. Raw traversal and null-byte checks
+  if (
+    rawUrl.includes('\0') ||
+    rawUrl.includes('..') ||
+    rawUrl.includes('%2e%2e') ||
+    rawUrl.includes('%2E%2E') ||
+    rawUrl.includes('%00')
+  ) {
     res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ error: 'Forbidden: Path traversal detected' }));
     return true;
   }
 
-  const url = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
-  let pathname = decodeURIComponent(url.pathname);
+  // 2. Parse and decode URL safely against malformed encodings
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
+  } catch (_err) {
+    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Bad Request: Malformed URL' }));
+    return true;
+  }
+
+  let pathname;
+  try {
+    pathname = decodeURIComponent(parsedUrl.pathname);
+  } catch (_err) {
+    res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Bad Request: Invalid URI component' }));
+    return true;
+  }
 
   if (pathname === '/') {
     pathname = '/index.html';
   }
 
-  // Reliable path containment check:
-  // Resolve both rootDir and requested path to absolute canonical paths
+  // 3. Reliable path containment check against rootDir
   const resolvedRoot = path.resolve(rootDir);
-  const resolvedTarget = path.resolve(resolvedRoot, '.' + path.sep + pathname.replace(/^[/\\]+/, ''));
+  const resolvedTarget = path.resolve(
+    resolvedRoot,
+    '.' + path.sep + pathname.replace(/^[/\\]+/, '')
+  );
 
-  // Ensure target path starts with rootDir plus separator, or equals rootDir
   const relative = path.relative(resolvedRoot, resolvedTarget);
   const isContained = !relative.startsWith('..') && !path.isAbsolute(relative);
 
@@ -51,25 +76,48 @@ export function serveStatic(req, res, rootDir) {
     return true;
   }
 
-  const safePath = resolvedTarget;
-
+  // 4. File existence and Symlink Traversal Protection (fs.realpathSync)
   let stat;
+  let realFilePath;
   try {
-    stat = fs.statSync(safePath);
-    if (stat.isDirectory()) {
-      const indexPath = path.join(safePath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        return serveFile(res, indexPath, fs.statSync(indexPath));
-      }
-      res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: 'Directory listing forbidden' }));
-      return true;
-    }
+    stat = fs.statSync(resolvedTarget);
+    realFilePath = fs.realpathSync(resolvedTarget);
   } catch {
     return false; // File not found in static dir
   }
 
-  return serveFile(res, safePath, stat);
+  // Ensure real resolved path (after following symlinks) is still contained within real rootDir
+  let realRoot;
+  try {
+    realRoot = fs.realpathSync(resolvedRoot);
+  } catch {
+    realRoot = resolvedRoot;
+  }
+
+  const realRelative = path.relative(realRoot, realFilePath);
+  const isRealContained = !realRelative.startsWith('..') && !path.isAbsolute(realRelative);
+
+  if (!isRealContained) {
+    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Forbidden: Symlink traversal detected' }));
+    return true;
+  }
+
+  if (stat.isDirectory()) {
+    const indexPath = path.join(realFilePath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      const indexReal = fs.realpathSync(indexPath);
+      const indexRel = path.relative(realRoot, indexReal);
+      if (!indexRel.startsWith('..') && !path.isAbsolute(indexRel)) {
+        return serveFile(res, indexReal, fs.statSync(indexReal));
+      }
+    }
+    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Directory listing forbidden' }));
+    return true;
+  }
+
+  return serveFile(res, realFilePath, stat);
 }
 
 function serveFile(res, filePath, stat) {
@@ -91,7 +139,7 @@ function serveFile(res, filePath, stat) {
   });
 
   const stream = fs.createReadStream(filePath);
-  stream.on('error', (err) => {
+  stream.on('error', (_err) => {
     if (!res.headersSent) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: 'Failed to read file' }));

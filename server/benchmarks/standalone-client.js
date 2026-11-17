@@ -33,7 +33,9 @@ const req = http.get(`http://127.0.0.1:${port}/api/replays/synth-200mb`, (res) =
 
   res.on('end', () => {
     const elapsedSec = (Date.now() - startTime) / 1000;
-    process.stdout.write(`CLIENT_COMPLETE bytes=${downloadedBytes} duration=${elapsedSec.toFixed(2)}\n`);
+    process.stdout.write(
+      `CLIENT_COMPLETE bytes=${downloadedBytes} duration=${elapsedSec.toFixed(2)}\n`
+    );
     setTimeout(() => process.exit(0), 100);
   });
 

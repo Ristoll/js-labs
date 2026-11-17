@@ -111,7 +111,11 @@ export class GameSocket extends EventTarget {
   }
 
   _flushQueue() {
-    while (this.sendQueue.length > 0 && this.isConnected && this.ws?.readyState === WebSocket.OPEN) {
+    while (
+      this.sendQueue.length > 0 &&
+      this.isConnected &&
+      this.ws?.readyState === WebSocket.OPEN
+    ) {
       const msg = this.sendQueue.shift();
       this.ws.send(msg);
     }

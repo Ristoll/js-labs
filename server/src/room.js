@@ -62,13 +62,14 @@ export class Room extends EventEmitter {
       });
 
       // Use pipeline() for robust match log writing with error handling
-      this._pipelinePromise = new Promise((resolve, reject) => {
+      this._pipelinePromise = new Promise((resolve) => {
         pipeline(this.transformStream, this.fileWriteStream, (err) => {
           if (err) {
             console.error(`[Room ${this.id}] Match log pipeline error:`, err);
-            reject(err);
+            this.emit('error', err);
+            resolve(err);
           } else {
-            resolve();
+            resolve(null);
           }
         });
       });
@@ -96,7 +97,11 @@ export class Room extends EventEmitter {
       data,
     };
 
-    if (!this.transformStream || this.transformStream.destroyed || this.transformStream.writableEnded) {
+    if (
+      !this.transformStream ||
+      this.transformStream.destroyed ||
+      this.transformStream.writableEnded
+    ) {
       return;
     }
 
@@ -126,7 +131,11 @@ export class Room extends EventEmitter {
 
     try {
       while (this._logQueue.length > 0 && !this._logBackpressure) {
-        if (!this.transformStream || this.transformStream.destroyed || this.transformStream.writableEnded) {
+        if (
+          !this.transformStream ||
+          this.transformStream.destroyed ||
+          this.transformStream.writableEnded
+        ) {
           this._logQueue.length = 0;
           break;
         }
@@ -201,7 +210,9 @@ export class Room extends EventEmitter {
   _safeSend(ws, player, payload) {
     if (!ws || ws.readyState !== 1) return; // 1 = OPEN
     if (ws.bufferedAmount > this.maxBufferedAmount) {
-      console.warn(`[Room ${this.id}] Client ${player.name} buffer bloated (${ws.bufferedAmount} bytes), terminating slow client.`);
+      console.warn(
+        `[Room ${this.id}] Client ${player.name} buffer bloated (${ws.bufferedAmount} bytes), terminating slow client.`
+      );
       ws.close(1008, 'Slow client buffer exceeded');
       return;
     }
@@ -288,26 +299,54 @@ export class Room extends EventEmitter {
     if (this._isClosed) return;
     this._isClosed = true;
 
-    // Flush any pending events in queue before ending stream
-    if (this._logQueue.length > 0 && this.transformStream && !this.transformStream.destroyed) {
+    // Enqueue final closure event
+    this._logQueue.push({
+      type: 'room_closed',
+      timestamp: Date.now(),
+      data: { roomId: this.id },
+    });
+
+    // Flush any pending events in queue while respecting stream backpressure
+    if (
+      this.transformStream &&
+      !this.transformStream.destroyed &&
+      !this.transformStream.writableEnded
+    ) {
       while (this._logQueue.length > 0) {
         const item = this._logQueue.shift();
+        let canWriteMore;
         try {
-          this.transformStream.write(item);
-        } catch {}
-      }
-    }
+          canWriteMore = this.transformStream.write(item);
+        } catch (_err) {
+          break;
+        }
 
-    if (this.transformStream && !this.transformStream.destroyed && !this.transformStream.writableEnded) {
-      try {
-        this.transformStream.write({
-          type: 'room_closed',
-          timestamp: Date.now(),
-          data: { roomId: this.id },
-        });
-      } catch {}
+        if (!canWriteMore) {
+          // Await 'drain' before writing the remaining queued events
+          await new Promise((resolve) => {
+            const onDrain = () => {
+              cleanup();
+              resolve();
+            };
+            const onClose = () => {
+              cleanup();
+              resolve();
+            };
+            const cleanup = () => {
+              this.transformStream.removeListener('drain', onDrain);
+              this.transformStream.removeListener('close', onClose);
+              this.transformStream.removeListener('error', onClose);
+            };
+            this.transformStream.once('drain', onDrain);
+            this.transformStream.once('close', onClose);
+            this.transformStream.once('error', onClose);
+          });
+        }
+      }
+
       this.transformStream.end();
     }
+
     if (this._pipelinePromise) {
       await this._pipelinePromise.catch(() => {});
     }

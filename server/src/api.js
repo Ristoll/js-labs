@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { streamReplayFile } from './streams.js';
 
 /**
@@ -54,22 +55,26 @@ export async function handleApi(req, res, roomManager, config) {
   if (pathname === '/api/rooms' && method === 'POST') {
     let bodyStr = '';
     let bodySize = 0;
+    let isPayloadTooLarge = false;
 
     req.on('data', (chunk) => {
+      if (isPayloadTooLarge) return;
       bodySize += chunk.length;
       if (bodySize > config.maxPayloadSize) {
-        req.destroy(); // Protect against oversized payloads
+        isPayloadTooLarge = true;
         if (!res.headersSent) {
           res.writeHead(413, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Payload Too Large' }));
         }
+        // Destroy the request stream after sending the 413 response
+        req.destroy();
         return;
       }
       bodyStr += chunk;
     });
 
     req.on('end', () => {
-      if (res.writableEnded) return;
+      if (isPayloadTooLarge || res.writableEnded) return;
 
       let body;
       try {
