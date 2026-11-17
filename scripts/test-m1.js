@@ -8,7 +8,7 @@ import {
   loadJson,
   loadAll,
   loadAllSequential,
-} from '../src/assets/loader.js';
+} from '../client/src/assets/loader.js';
 
 // Setup Mock DOM and AudioContext for Node.js environment
 globalThis.Image = class MockImage {
@@ -75,8 +75,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Static files from public/
-  const filePath = path.join(process.cwd(), 'public', url.pathname);
+  // Static files from client/public/ or public/
+  const clientPublic = path.join(process.cwd(), 'client', 'public', url.pathname);
+  const rootPublic = path.join(process.cwd(), 'public', url.pathname);
+  const filePath = fs.existsSync(clientPublic) ? clientPublic : rootPublic;
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const delay = parseInt(url.searchParams.get('delay') || '0', 10);
     const ext = path.extname(filePath);

@@ -39,8 +39,7 @@ export function setupLobbyUI(lobby) {
 
   function renderRoomList(rooms) {
     if (!rooms || rooms.length === 0) {
-      roomList.innerHTML =
-        '<li class="lobby-empty">No rooms available. Waiting for refresh…</li>';
+      roomList.innerHTML = '<li class="lobby-empty">No rooms available. Waiting for refresh…</li>';
       return;
     }
 
@@ -112,4 +111,3 @@ export function setupLobbyUI(lobby) {
 
   return { show, hide };
 }
-

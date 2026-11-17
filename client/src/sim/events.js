@@ -11,4 +11,3 @@
  *   'exploded' — an asteroid was destroyed by a bullet  { detail: { x, y } }
  */
 export const simEvents = new EventTarget();
-

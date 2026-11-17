@@ -4,6 +4,7 @@
  * Implements:
  * - class Lobby extends EventTarget
  * - refresh() — fetches /api/rooms with AbortSignal.timeout; dispatches 'roomsChanged'
+ * - createRoom({ name, maxPlayers }) — POSTs to /api/rooms
  * - join(roomId, playerName) — dispatches 'joined' with room config and player name
  * - start() — begins periodic refresh every REFRESH_INTERVAL_MS
  * - stop() — cancels the periodic refresh (aborts in-flight request); no orphaned requests
@@ -14,7 +15,7 @@
  *   'joined'       — { detail: { room: Room, playerName: string } }
  */
 
-const ROOMS_URL = '/api/rooms.json';
+const ROOMS_URL = '/api/rooms';
 const REFRESH_INTERVAL_MS = 5000;
 const REQUEST_TIMEOUT_MS = 4000;
 
@@ -32,7 +33,7 @@ export class Lobby extends EventTarget {
   #active = false;
 
   /**
-   * Fetches the current room list from /api/rooms.json.
+   * Fetches the current room list from /api/rooms.
    * Uses AbortSignal.timeout for per-request timeout.
    * Cancellable via stop().
    * On success dispatches 'roomsChanged'; on error dispatches 'error'.
@@ -42,7 +43,8 @@ export class Lobby extends EventTarget {
     if (this.#fetchController) {
       this.#fetchController.abort();
     }
-    this.#fetchController = new AbortController();
+    const currentController = new AbortController();
+    this.#fetchController = currentController;
 
     // Combine our manual abort (stop()) with a per-request timeout.
     const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -50,12 +52,11 @@ export class Lobby extends EventTarget {
     // AbortSignal.any is available in modern browsers; fall back to manual wiring.
     let combinedSignal;
     if (typeof AbortSignal.any === 'function') {
-      combinedSignal = AbortSignal.any([this.#fetchController.signal, timeoutSignal]);
+      combinedSignal = AbortSignal.any([currentController.signal, timeoutSignal]);
     } else {
-      // Fallback: listen to timeout signal and forward the abort.
-      combinedSignal = this.#fetchController.signal;
+      combinedSignal = currentController.signal;
       timeoutSignal.addEventListener('abort', () => {
-        this.#fetchController?.abort(timeoutSignal.reason);
+        currentController.abort(timeoutSignal.reason);
       });
     }
 
@@ -77,7 +78,30 @@ export class Lobby extends EventTarget {
         })
       );
     } finally {
-      this.#fetchController = null;
+      // Fix race condition: only clear #fetchController if it matches the current request
+      if (this.#fetchController === currentController) {
+        this.#fetchController = null;
+      }
+    }
+  }
+
+  async createRoom({ name, maxPlayers = 4 }) {
+    try {
+      const res = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, maxPlayers }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to create room (HTTP ${res.status})`);
+      }
+      const newRoom = await res.json();
+      await this.refresh();
+      return newRoom;
+    } catch (err) {
+      this.dispatchEvent(new CustomEvent('error', { detail: { message: err.message } }));
+      throw err;
     }
   }
 
@@ -136,4 +160,3 @@ export class Lobby extends EventTarget {
     return this.#rooms;
   }
 }
-

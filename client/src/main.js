@@ -15,6 +15,7 @@ import { drawLoadingScreen } from './render/loading.js';
 import { setupAudio, getSharedAudioContext } from './audio.js';
 import { Lobby } from './lobby/lobby.js';
 import { setupLobbyUI } from './lobby/lobby-ui.js';
+import { GameSocket } from './net/socket.js';
 import {
   toggleExperiment1,
   toggleExperiment2,
@@ -320,8 +321,11 @@ async function initGame() {
     // Wire audio module to simulation events (after assets are decoded)
     setupAudio(gameAssets);
 
-    // M3 — Show lobby; start game only after player joins.
-    await showLobbyAndWaitForJoin();
+    // M3/M4 — Show lobby; start game only after player joins.
+    const joinData = await showLobbyAndWaitForJoin();
+
+    // Connect WebSocket & Join Room
+    initMultiplayer(joinData);
 
     // Start simulation loop once assets are ready and player has joined
     loop.start();
@@ -370,6 +374,54 @@ function showLobbyAndWaitForJoin() {
       resolve(e.detail);
     });
   });
+}
+
+function initMultiplayer({ room, playerName }) {
+  const hud = document.getElementById('multiplayer-hud');
+  const rosterList = document.getElementById('roster-list');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+
+  if (hud) hud.classList.remove('hidden');
+
+  const socket = new GameSocket();
+  socket.connect();
+
+  socket.addEventListener('open', () => {
+    socket.joinRoom(room.id, playerName);
+  });
+
+  socket.addEventListener('roster', (e) => {
+    const { players } = e.detail;
+    if (rosterList) {
+      rosterList.innerHTML = players
+        .map((p) => `<li class="roster-item">${p.name || 'Pilot'}</li>`)
+        .join('');
+    }
+  });
+
+  socket.addEventListener('chat', (e) => {
+    const { senderName, text } = e.detail;
+    if (chatMessages) {
+      const msgEl = document.createElement('div');
+      msgEl.className = 'chat-msg';
+      msgEl.innerHTML = `<span class="chat-author">${senderName}:</span><span>${text}</span>`;
+      chatMessages.appendChild(msgEl);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  });
+
+  if (chatForm && chatInput) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (text) {
+        socket.sendChat(text);
+        chatInput.value = '';
+      }
+    });
+  }
 }
 
 initGame();
