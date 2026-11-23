@@ -130,6 +130,15 @@ export function setupWebSocket(server, roomManager, config) {
           case 'chat':
             handleChat(ws, message.payload);
             break;
+          case 'input':
+            handleInput(ws, message.payload);
+            break;
+          case 'admin_latency':
+            handleAdminLatency(ws, message.payload);
+            break;
+          case 'ping':
+            handlePing(ws, message.payload);
+            break;
           case 'leave':
             handleLeave(ws);
             break;
@@ -213,6 +222,31 @@ export function setupWebSocket(server, roomManager, config) {
 
     const text = String(payload.text).trim().slice(0, 500); // 500 char chat limit
     ws.joinedRoom.handleChat(ws.playerId, text);
+  }
+
+  function handleInput(ws, payload) {
+    if (ws.joinedRoom && ws.playerId) {
+      ws.joinedRoom.handleInput(ws.playerId, payload);
+    }
+  }
+
+  function handleAdminLatency(ws, payload) {
+    if (ws.joinedRoom) {
+      ws.joinedRoom.handleAdminLatency(payload);
+    }
+  }
+
+  function handlePing(ws, payload) {
+    ws.send(
+      JSON.stringify({
+        v: 1,
+        type: 'pong',
+        payload: {
+          clientTime: payload?.clientTime || 0,
+          serverTime: Date.now(),
+        },
+      })
+    );
   }
 
   function handleLeave(ws, reason = 'left') {

@@ -74,4 +74,30 @@ export default [
       'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
+  // Shared isomorphic files (both Node.js and Browser)
+  {
+    files: ['shared/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        globalThis: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        performance: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        EventTarget: 'readonly',
+        CustomEvent: 'readonly',
+        ArrayBuffer: 'readonly',
+        Uint8Array: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-console': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
 ];

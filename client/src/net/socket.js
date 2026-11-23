@@ -1,13 +1,6 @@
 /**
- * Client WebSocket manager for Lab 04
- *
- * Implements:
- * - Connection lifecycle with automatic reconnect (exponential backoff + jitter)
- * - Message queue while disconnected
- * - Heartbeat responses (browser handles ping/pong under the hood, but also support app-level)
- * - EventTarget-based event dispatching
+ * Client WebSocket manager for Lab 04 & Lab 05
  */
-
 export class GameSocket extends EventTarget {
   constructor(url) {
     super();
@@ -22,14 +15,22 @@ export class GameSocket extends EventTarget {
     this.isConnected = false;
     this.currentRoom = null;
     this.playerInfo = null;
+    this.playerId = null;
     this.closedExplicitly = false;
+
+    // Telemetry & metrics
+    this.bytesIn = 0;
+    this.bytesOut = 0;
+    this.rtt = 0;
+    this.lastServerTick = 0;
+    this.lastSnapshotTime = 0;
   }
 
   connect() {
     this.closedExplicitly = false;
     try {
       this.ws = new WebSocket(this.url);
-    } catch (err) {
+    } catch (_err) {
       this._scheduleReconnect();
       return;
     }
@@ -39,23 +40,36 @@ export class GameSocket extends EventTarget {
       this.reconnectAttempts = 0;
       this.dispatchEvent(new CustomEvent('open'));
 
-      // If we were previously in a room, re-join
       if (this.currentRoom && this.playerInfo) {
         this.joinRoom(this.currentRoom, this.playerInfo.name);
       }
 
-      // Flush send queue
       this._flushQueue();
     };
 
     this.ws.onmessage = (event) => {
+      const dataLen =
+        typeof event.data === 'string' ? event.data.length : event.data.byteLength || 0;
+      this.bytesIn += dataLen;
+
       try {
         const msg = JSON.parse(event.data);
+        if (msg.type === 'joined') {
+          this.playerId = msg.payload.playerId;
+        } else if (msg.type === 'pong') {
+          if (msg.payload && msg.payload.clientTime) {
+            this.rtt = Date.now() - msg.payload.clientTime;
+          }
+        } else if (msg.type === 'snapshot') {
+          this.lastServerTick = msg.payload.tick;
+          this.lastSnapshotTime = performance.now();
+        }
+
         if (msg.type) {
           this.dispatchEvent(new CustomEvent(msg.type, { detail: msg.payload }));
         }
         this.dispatchEvent(new CustomEvent('message', { detail: msg }));
-      } catch (err) {
+      } catch (_err) {
         console.error('[GameSocket] Invalid JSON message received:', event.data);
       }
     };
@@ -69,8 +83,8 @@ export class GameSocket extends EventTarget {
       }
     };
 
-    this.ws.onerror = (err) => {
-      this.dispatchEvent(new CustomEvent('error', { detail: err }));
+    this.ws.onerror = (_err) => {
+      this.dispatchEvent(new CustomEvent('error', { detail: _err }));
     };
   }
 
@@ -83,7 +97,6 @@ export class GameSocket extends EventTarget {
     }
 
     this.reconnectAttempts++;
-    // Exponential backoff + jitter
     const delay = Math.min(
       this.maxDelayMs,
       this.baseDelayMs * Math.pow(2, this.reconnectAttempts - 1) + Math.random() * 200
@@ -102,6 +115,8 @@ export class GameSocket extends EventTarget {
       type,
       payload,
     });
+
+    this.bytesOut += msg.length;
 
     if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(msg);
@@ -132,6 +147,18 @@ export class GameSocket extends EventTarget {
 
   sendChat(text) {
     this.send('chat', { text });
+  }
+
+  sendInput(payload) {
+    this.send('input', payload);
+  }
+
+  sendPing(clientTime = Date.now()) {
+    this.send('ping', { clientTime });
+  }
+
+  setLatency(config) {
+    this.send('admin_latency', config);
   }
 
   leaveRoom() {

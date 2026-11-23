@@ -16,6 +16,7 @@ import { setupAudio, getSharedAudioContext } from './audio.js';
 import { Lobby } from './lobby/lobby.js';
 import { setupLobbyUI } from './lobby/lobby-ui.js';
 import { GameSocket } from './net/socket.js';
+import { NetgraphUI } from './net/netgraph.js';
 import {
   toggleExperiment1,
   toggleExperiment2,
@@ -80,6 +81,13 @@ populateAsteroids(5);
 world.spawn(Pickup.createRandom(arena));
 
 let previousWorld = world.clone();
+
+// Multiplayer network state (Lab 05)
+let isMultiplayer = false;
+let myPlayerId = null;
+let inputSeq = 1;
+let pendingInputs = [];
+let netgraph = null;
 
 // --- DEMONSTRATION OF THE `this` BUG (Section 2) ---
 // Naive bug:
@@ -165,6 +173,40 @@ const loop = createLoop({
   step: 1 / 60,
 
   simulate(dt) {
+    if (isMultiplayer) {
+      // --- Milestone 1: Dumb Client Simulation ---
+      // Sample input and send to authoritative server with monotonic seq number
+      let turn = 0;
+      if (input.isDown('ArrowLeft') || input.isDown('KeyA')) {
+        turn -= 1;
+      }
+      if (input.isDown('ArrowRight') || input.isDown('KeyD')) {
+        turn += 1;
+      }
+      const thrust = Boolean(
+        input.isDown('ArrowUp') || input.isDown('KeyW') || input.isDown('Space')
+      );
+      const reverse = Boolean(input.isDown('ArrowDown') || input.isDown('KeyS'));
+      const fire = Boolean(input.isDown('Space') || input.isDown('KeyF'));
+
+      if (multiplayerSocket && multiplayerSocket.isConnected) {
+        const inputPacket = {
+          seq: inputSeq++,
+          tick: multiplayerSocket.lastServerTick || 0,
+          thrust,
+          reverse,
+          turn,
+          fire,
+        };
+        multiplayerSocket.sendInput(inputPacket);
+        pendingInputs.push(inputPacket);
+        netgraph?.setPendingInputs(pendingInputs.length);
+      }
+
+      // No client prediction in M1: local ship only moves on authoritative snapshots!
+      return;
+    }
+
     // Retain previous state of the entire world for render interpolation
     previousWorld = world.clone();
 
@@ -376,6 +418,8 @@ function showLobbyAndWaitForJoin() {
   });
 }
 
+let multiplayerSocket = null;
+
 function initMultiplayer({ room, playerName }) {
   const hud = document.getElementById('multiplayer-hud');
   const rosterList = document.getElementById('roster-list');
@@ -386,10 +430,41 @@ function initMultiplayer({ room, playerName }) {
   if (hud) hud.classList.remove('hidden');
 
   const socket = new GameSocket();
+  multiplayerSocket = socket;
   socket.connect();
+
+  netgraph = new NetgraphUI(socket);
+  netgraph.show();
 
   socket.addEventListener('open', () => {
     socket.joinRoom(room.id, playerName);
+  });
+
+  socket.addEventListener('joined', (e) => {
+    myPlayerId = e.detail.playerId;
+    isMultiplayer = true;
+  });
+
+  socket.addEventListener('snapshot', (e) => {
+    const { lastProcessedSeq, entities } = e.detail;
+
+    // Acknowledge processed input sequences
+    if (lastProcessedSeq && myPlayerId && lastProcessedSeq[myPlayerId]) {
+      const ack = lastProcessedSeq[myPlayerId];
+      pendingInputs = pendingInputs.filter((p) => p.seq > ack);
+      netgraph?.setPendingInputs(pendingInputs.length);
+    }
+
+    // M1 Authoritative Server Sync (Dumb Client)
+    previousWorld = world.clone();
+    world.clear();
+    const serverWorld = World.fromSnapshot(entities);
+    for (const entity of serverWorld) {
+      world.spawn(entity);
+      if (entity.kind === 'ship' && entity.playerId === myPlayerId) {
+        ship = entity;
+      }
+    }
   });
 
   socket.addEventListener('roster', (e) => {

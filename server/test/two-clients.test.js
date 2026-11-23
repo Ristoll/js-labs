@@ -23,11 +23,16 @@ describe('Lab 04 M2 Two Clients Live Verification', () => {
   });
 
   after(async () => {
-    await new Promise((resolve) => {
-      app.wss.close(() => {
-        app.server.close(resolve);
+    if (app && app.shutdown) {
+      await app.shutdown();
+    } else {
+      await app.roomManager.closeAll();
+      await new Promise((resolve) => {
+        app.wss.close(() => {
+          app.server.close(resolve);
+        });
       });
-    });
+    }
   });
 
   test('Two clients join the same room, see each other in roster, and exchange chat messages', async () => {

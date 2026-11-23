@@ -61,6 +61,68 @@
       </div>
     </div>
 
+    <!-- Lab 05 Netgraph & Latency Injector Overlay -->
+    <div id="netgraph-overlay" class="netgraph hidden">
+      <div class="netgraph-header">
+        <span class="netgraph-title">NETGRAPH // LAB 05</span>
+        <button id="btn-toggle-netgraph" class="netgraph-minimize" title="Minimize / Expand">
+          _
+        </button>
+      </div>
+      <div class="netgraph-body" id="netgraph-body">
+        <div class="netgraph-row">
+          <span class="net-lbl">RTT:</span><span id="net-rtt" class="net-val">0 ms</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Server Tick:</span
+          ><span id="net-tick" class="net-val">#0 (30 Hz)</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Snap Age:</span><span id="net-snap-age" class="net-val">0 ms</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Bandwidth:</span
+          ><span id="net-bandwidth" class="net-val">↓ 0.0 KB/s | ↑ 0.0 KB/s</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Pending Inputs:</span
+          ><span id="net-pending" class="net-val">0</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Reconciliation:</span
+          ><span id="net-correction" class="net-val">0.0 px (No Pred)</span>
+        </div>
+
+        <div class="netgraph-controls">
+          <div class="netgraph-ctrl-title">LATENCY INJECTOR</div>
+          <div class="netgraph-btn-group">
+            <button class="net-btn" data-delay="0" data-jitter="0" data-drop="0">0 ms</button>
+            <button class="net-btn" data-delay="50" data-jitter="10" data-drop="0">50 ms</button>
+            <button class="net-btn active" data-delay="100" data-jitter="0" data-drop="0">
+              100 ms (M1)
+            </button>
+            <button class="net-btn" data-delay="150" data-jitter="30" data-drop="0.02">
+              150ms+Jitter
+            </button>
+          </div>
+          <div class="netgraph-sliders">
+            <label class="net-slider-label"
+              >Delay: <span id="val-delay">100</span>ms
+              <input type="range" id="slider-delay" min="0" max="400" step="10" value="100"
+            /></label>
+            <label class="net-slider-label"
+              >Jitter: <span id="val-jitter">0</span>ms
+              <input type="range" id="slider-jitter" min="0" max="100" step="5" value="0"
+            /></label>
+            <label class="net-slider-label"
+              >Drop: <span id="val-drop">0</span>%
+              <input type="range" id="slider-drop" min="0" max="20" step="1" value="0"
+            /></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="controls-hint">
       <kbd>W</kbd>/<kbd>▲</kbd> Forward &bull; <kbd>S</kbd>/<kbd>▼</kbd> Reverse &bull;
       <kbd>A</kbd>/<kbd>D</kbd>/<kbd>◄</kbd>/<kbd>►</kbd> Turn &bull; <kbd>Space</kbd> Fire &bull;
