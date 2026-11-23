@@ -20,7 +20,8 @@ export class NetgraphUI {
     this.sliderJitter = document.getElementById('slider-jitter');
     this.sliderDrop = document.getElementById('slider-drop');
 
-    this.presetButtons = document.querySelectorAll('.net-btn');
+    this.presetButtons = document.querySelectorAll('.net-btn:not(.net-btn-toggle)');
+    this.toggleDeterminismBtn = document.getElementById('btn-toggle-determinism');
     this.minimizeBtn = document.getElementById('btn-toggle-netgraph');
     this.bodyEl = document.getElementById('netgraph-body');
 
@@ -32,6 +33,7 @@ export class NetgraphUI {
 
     this.pendingInputCount = 0;
     this.correctionMagnitude = 0;
+    this.isDeterminismBroken = false;
 
     this._setupControls();
     this._startMetricsLoop();
@@ -101,6 +103,16 @@ export class NetgraphUI {
         this.socket.setLatency({ delayMs: delay, jitterMs: jitter, dropRate: drop });
       });
     });
+
+    if (this.toggleDeterminismBtn) {
+      this.toggleDeterminismBtn.addEventListener('click', () => {
+        if (typeof window.breakDeterminism === 'function') {
+          this.isDeterminismBroken = window.breakDeterminism();
+          this.toggleDeterminismBtn.textContent = `Break Determinism: ${this.isDeterminismBroken ? 'ON' : 'OFF'}`;
+          this.toggleDeterminismBtn.classList.toggle('active', this.isDeterminismBroken);
+        }
+      });
+    }
 
     // Default Milestone 1 recommendation: 100 ms latency preset
     setTimeout(() => {

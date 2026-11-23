@@ -1,11 +1,11 @@
 import { createLoop } from './loop.js';
 import { createInput } from './input.js';
-import { Ship } from './sim/ship.js';
+import { Ship, integrate } from './sim/ship.js';
 import { Asteroid } from './sim/asteroid.js';
 import { Explosion } from './sim/explosion.js';
 import { Pickup } from './sim/pickup.js';
 import { World } from './sim/world.js';
-import { createArena } from './sim/arena.js';
+import { createArena, wrapAround } from './sim/arena.js';
 import { findCollisions, resolveCollisions } from './sim/collision.js';
 import { Vector2 } from './sim/vector.js';
 import { setupCanvas } from './render/canvas.js';
@@ -76,6 +76,7 @@ let ship = new Ship({
   angle: -Math.PI / 2, // Start facing upwards
   thrust: false,
 });
+ship.renderOffset = { x: 0, y: 0 };
 world.spawn(ship);
 populateAsteroids(5);
 world.spawn(Pickup.createRandom(arena));
@@ -88,6 +89,13 @@ let myPlayerId = null;
 let inputSeq = 1;
 let pendingInputs = [];
 let netgraph = null;
+let breakDeterminismActive = false;
+
+window.breakDeterminism = (active) => {
+  breakDeterminismActive = typeof active === 'boolean' ? active : !breakDeterminismActive;
+  console.log(`[Netcode] Determinism break active: ${breakDeterminismActive}`);
+  return breakDeterminismActive;
+};
 
 // --- DEMONSTRATION OF THE `this` BUG (Section 2) ---
 // Naive bug:
@@ -173,9 +181,11 @@ const loop = createLoop({
   step: 1 / 60,
 
   simulate(dt) {
-    if (isMultiplayer) {
-      // --- Milestone 1: Dumb Client Simulation ---
-      // Sample input and send to authoritative server with monotonic seq number
+    if (isMultiplayer && ship) {
+      // Retain previous state of the entire world for render interpolation
+      previousWorld = world.clone();
+
+      // Sample current player input
       let turn = 0;
       if (input.isDown('ArrowLeft') || input.isDown('KeyA')) {
         turn -= 1;
@@ -189,21 +199,51 @@ const loop = createLoop({
       const reverse = Boolean(input.isDown('ArrowDown') || input.isDown('KeyS'));
       const fire = Boolean(input.isDown('Space') || input.isDown('KeyF'));
 
+      const inputPacket = {
+        seq: inputSeq++,
+        tick: multiplayerSocket?.lastServerTick || 0,
+        thrust,
+        reverse,
+        turn,
+        fire,
+      };
+
       if (multiplayerSocket && multiplayerSocket.isConnected) {
-        const inputPacket = {
-          seq: inputSeq++,
-          tick: multiplayerSocket.lastServerTick || 0,
-          thrust,
-          reverse,
-          turn,
-          fire,
-        };
         multiplayerSocket.sendInput(inputPacket);
-        pendingInputs.push(inputPacket);
-        netgraph?.setPendingInputs(pendingInputs.length);
       }
 
-      // No client prediction in M1: local ship only moves on authoritative snapshots!
+      // Buffer unacknowledged input for reconciliation replay
+      pendingInputs.push({ seq: inputPacket.seq, input: inputPacket, dt });
+      netgraph?.setPendingInputs(pendingInputs.length);
+
+      // --- M2: Client-Side Prediction ---
+      // Apply input to own ship immediately with shared integrate()
+      integrate(ship, inputPacket, dt);
+
+      // Determinism-break experiment: inject non-deterministic drift if active
+      if (breakDeterminismActive) {
+        ship.x += (Math.random() - 0.5) * 8;
+        ship.y += (Math.random() - 0.5) * 8;
+      }
+
+      wrapAround(ship, arena);
+
+      // Local bullet prediction (fire immediately)
+      if (inputPacket.fire) {
+        ship.fire(world, false);
+      }
+
+      // Smooth decay of visual offset over ~100 ms
+      if (ship.renderOffset) {
+        const decay = Math.exp(-15 * dt);
+        ship.renderOffset.x *= decay;
+        ship.renderOffset.y *= decay;
+        if (Math.hypot(ship.renderOffset.x, ship.renderOffset.y) < 0.05) {
+          ship.renderOffset.x = 0;
+          ship.renderOffset.y = 0;
+        }
+      }
+
       return;
     }
 
@@ -442,29 +482,107 @@ function initMultiplayer({ room, playerName }) {
 
   socket.addEventListener('joined', (e) => {
     myPlayerId = e.detail.playerId;
+    if (ship) {
+      ship.playerId = myPlayerId;
+    }
     isMultiplayer = true;
   });
 
   socket.addEventListener('snapshot', (e) => {
     const { lastProcessedSeq, entities } = e.detail;
 
-    // Acknowledge processed input sequences
-    if (lastProcessedSeq && myPlayerId && lastProcessedSeq[myPlayerId]) {
+    // 1. Acknowledge processed input sequences
+    if (lastProcessedSeq && myPlayerId && typeof lastProcessedSeq[myPlayerId] === 'number') {
       const ack = lastProcessedSeq[myPlayerId];
       pendingInputs = pendingInputs.filter((p) => p.seq > ack);
       netgraph?.setPendingInputs(pendingInputs.length);
     }
 
-    // M1 Authoritative Server Sync (Dumb Client)
-    previousWorld = world.clone();
-    world.clear();
-    const serverWorld = World.fromSnapshot(entities);
-    for (const entity of serverWorld) {
-      world.spawn(entity);
-      if (entity.kind === 'ship' && entity.playerId === myPlayerId) {
-        ship = entity;
+    // 2. Locate our authoritative ship state in snapshot
+    const serverShipSnap = entities.find(
+      (ent) => ent.kind === 'ship' && (ent.playerId === myPlayerId || (ship && ent.id === ship.id))
+    );
+
+    if (serverShipSnap && ship) {
+      // Capture current predicted position before server correction
+      const predictedX = ship.x;
+      const predictedY = ship.y;
+
+      // Reset local ship physics to the server's authoritative state
+      ship.x = serverShipSnap.x;
+      ship.y = serverShipSnap.y;
+      ship.vx = serverShipSnap.vx;
+      ship.vy = serverShipSnap.vy;
+      ship.angle = serverShipSnap.angle;
+      ship.thrust = serverShipSnap.thrust;
+      ship.reverse = serverShipSnap.reverse;
+      ship.alive = serverShipSnap.alive;
+
+      // Re-apply (replay) all remaining unacknowledged inputs in chronological order
+      for (const pending of pendingInputs) {
+        integrate(ship, pending.input, pending.dt);
+        wrapAround(ship, arena);
+      }
+
+      // Measure reconciliation correction error
+      const errorX = predictedX - ship.x;
+      const errorY = predictedY - ship.y;
+      const errorDist = Math.hypot(errorX, errorY);
+      netgraph?.setCorrection(errorDist);
+
+      // Smooth correction over ~100 ms to eliminate visual popping
+      if (!ship.renderOffset) {
+        ship.renderOffset = { x: 0, y: 0 };
+      }
+
+      if (errorDist > 0.05 && errorDist < 120) {
+        ship.renderOffset.x += errorX;
+        ship.renderOffset.y += errorY;
+      } else if (errorDist >= 120) {
+        // Large deviation (teleport/respawn) -> snap immediately
+        ship.renderOffset.x = 0;
+        ship.renderOffset.y = 0;
       }
     }
+
+    // 3. Update remote entities (other ships, asteroids, pickups)
+    for (const entSnap of entities) {
+      if (
+        entSnap.kind === 'ship' &&
+        (entSnap.playerId === myPlayerId || (ship && entSnap.id === ship.id))
+      ) {
+        continue;
+      }
+
+      const existing = world.get(entSnap.id);
+      if (existing) {
+        existing.x = entSnap.x;
+        existing.y = entSnap.y;
+        existing.vx = entSnap.vx;
+        existing.vy = entSnap.vy;
+        existing.angle = entSnap.angle;
+        existing.alive = entSnap.alive;
+        if (existing.kind === 'ship') {
+          existing.thrust = entSnap.thrust;
+          existing.reverse = entSnap.reverse;
+        }
+      } else {
+        const spawned = World.fromSnapshot([entSnap]).get(entSnap.id);
+        if (spawned) {
+          world.spawn(spawned);
+        }
+      }
+    }
+
+    // Despawn entities removed on server
+    const currentServerIds = new Set(entities.map((ent) => ent.id));
+    for (const ent of world) {
+      if (ship && ent.id === ship.id) continue;
+      if (!currentServerIds.has(ent.id)) {
+        world.despawn(ent.id);
+      }
+    }
+    world.sweep();
   });
 
   socket.addEventListener('roster', (e) => {

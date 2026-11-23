@@ -250,19 +250,26 @@ export function drawShip(
   arena = null,
   sprite = null
 ) {
-  let x = currentShip.x;
-  let y = currentShip.y;
+  const offsetX = currentShip.renderOffset?.x || 0;
+  const offsetY = currentShip.renderOffset?.y || 0;
+  let x = currentShip.x + offsetX;
+  let y = currentShip.y + offsetY;
   let angle = currentShip.angle;
   const thrust = currentShip.thrust;
   const reverse = currentShip.reverse;
 
   if (previousShip && alpha < 1) {
+    const prevOffsetX = previousShip.renderOffset?.x || 0;
+    const prevOffsetY = previousShip.renderOffset?.y || 0;
+    const prevX = previousShip.x + prevOffsetX;
+    const prevY = previousShip.y + prevOffsetY;
+
     if (arena && arena.width > 0 && arena.height > 0) {
-      x = lerpCoordinate(previousShip.x, currentShip.x, alpha, arena.width);
-      y = lerpCoordinate(previousShip.y, currentShip.y, alpha, arena.height);
+      x = lerpCoordinate(prevX, x, alpha, arena.width);
+      y = lerpCoordinate(prevY, y, alpha, arena.height);
     } else {
-      x = lerp(previousShip.x, currentShip.x, alpha);
-      y = lerp(previousShip.y, currentShip.y, alpha);
+      x = lerp(prevX, x, alpha);
+      y = lerp(prevY, y, alpha);
     }
     angle = lerpAngle(previousShip.angle, currentShip.angle, alpha);
   }
