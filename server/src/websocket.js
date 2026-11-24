@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { TokenBucket } from './rate-limiter.js';
 import { validateMessage, WS_CLOSE_CODES } from './protocol.js';
+import { BinaryCodec } from 'shared/codec';
 
 export function setupWebSocket(server, roomManager, config) {
   // Pass maxPayload directly into WebSocketServer options
@@ -54,6 +55,7 @@ export function setupWebSocket(server, roomManager, config) {
     ws.joinedRoom = null;
     ws.playerId = null;
     ws.playerName = null;
+    ws.preferredCodec = null;
 
     ws.on('pong', () => {
       ws.isAlive = true;
@@ -75,7 +77,7 @@ export function setupWebSocket(server, roomManager, config) {
       }
     }, config.joinTimeoutMs);
 
-    ws.on('message', (data) => {
+    ws.on('message', (data, isBinary) => {
       // 1. Rate limiting check - close connection on abuse (code 1008 Policy Violation)
       if (!ws.rateLimiter.tryConsume(1)) {
         ws.send(
@@ -92,7 +94,20 @@ export function setupWebSocket(server, roomManager, config) {
       // 2. Message parsing
       let message;
       try {
-        message = JSON.parse(data.toString());
+        const isBinaryBuffer =
+          isBinary ||
+          (typeof data !== 'string' &&
+            (Buffer.isBuffer(data) || data instanceof ArrayBuffer || ArrayBuffer.isView(data)));
+
+        if (isBinaryBuffer && data.length > 0 && data[0] !== 0x7b /* '{' */) {
+          message = BinaryCodec.decode(data);
+          ws.preferredCodec = 'binary';
+        } else {
+          message = JSON.parse(data.toString());
+          if (!ws.preferredCodec) {
+            ws.preferredCodec = 'json';
+          }
+        }
       } catch {
         console.warn('[WS] Malformed JSON rejected from socket');
         ws.send(
@@ -130,8 +145,22 @@ export function setupWebSocket(server, roomManager, config) {
           case 'chat':
             handleChat(ws, message.payload);
             break;
+          case 'input':
+            handleInput(ws, message.payload);
+            break;
+          case 'admin_latency':
+            handleAdminLatency(ws, message.payload);
+            break;
+          case 'ping':
+            handlePing(ws, message.payload);
+            break;
           case 'leave':
             handleLeave(ws);
+            break;
+          case 'set_codec':
+            if (message.payload && message.payload.codec) {
+              ws.preferredCodec = message.payload.codec;
+            }
             break;
         }
       } catch (err) {
@@ -189,6 +218,11 @@ export function setupWebSocket(server, roomManager, config) {
     ws.joinedRoom = room;
     ws.playerId = playerId;
     ws.playerName = playerName;
+    if (payload.codec === 'binary') {
+      ws.preferredCodec = 'binary';
+    } else if (payload.codec === 'json') {
+      ws.preferredCodec = 'json';
+    }
     clearTimeout(joinTimeout);
 
     // Confirm joined to player
@@ -213,6 +247,31 @@ export function setupWebSocket(server, roomManager, config) {
 
     const text = String(payload.text).trim().slice(0, 500); // 500 char chat limit
     ws.joinedRoom.handleChat(ws.playerId, text);
+  }
+
+  function handleInput(ws, payload) {
+    if (ws.joinedRoom && ws.playerId) {
+      ws.joinedRoom.handleInput(ws.playerId, payload);
+    }
+  }
+
+  function handleAdminLatency(ws, payload) {
+    if (ws.joinedRoom) {
+      ws.joinedRoom.handleAdminLatency(payload);
+    }
+  }
+
+  function handlePing(ws, payload) {
+    ws.send(
+      JSON.stringify({
+        v: 1,
+        type: 'pong',
+        payload: {
+          clientTime: payload?.clientTime || 0,
+          serverTime: Date.now(),
+        },
+      })
+    );
   }
 
   function handleLeave(ws, reason = 'left') {

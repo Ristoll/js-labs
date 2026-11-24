@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pipeline } from 'node:stream';
 import { MatchLogTransform } from './streams.js';
+import { Match } from './match.js';
 
 export class Room extends EventEmitter {
   /**
@@ -32,6 +33,9 @@ export class Room extends EventEmitter {
     this._logQueue = [];
     this._isFlushingLogQueue = false;
     this._logBackpressure = false;
+
+    this.match = new Match(this);
+    this.match.start();
 
     this._initMatchLog();
   }
@@ -163,6 +167,7 @@ export class Room extends EventEmitter {
     }
 
     this.players.set(player.id, player);
+    this.match.addPlayer(player);
 
     this.logEvent('player_joined', {
       playerId: player.id,
@@ -183,6 +188,7 @@ export class Room extends EventEmitter {
     if (!player) return null;
 
     this.players.delete(playerId);
+    this.match.removePlayer(playerId);
 
     this.logEvent('player_left', {
       playerId,
@@ -216,7 +222,15 @@ export class Room extends EventEmitter {
       ws.close(1008, 'Slow client buffer exceeded');
       return;
     }
-    ws.send(payload);
+    if (payload instanceof ArrayBuffer) {
+      ws.send(Buffer.from(payload), { binary: true });
+    } else if (ArrayBuffer.isView(payload)) {
+      ws.send(Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength), {
+        binary: true,
+      });
+    } else {
+      ws.send(payload);
+    }
   }
 
   broadcast(message, senderWs = null) {
@@ -247,6 +261,18 @@ export class Room extends EventEmitter {
     const payload = JSON.stringify(message);
     for (const player of this.players.values()) {
       this._safeSend(player.ws, player, payload);
+    }
+  }
+
+  handleInput(playerId, payload) {
+    if (this.match) {
+      this.match.handleInput(playerId, payload);
+    }
+  }
+
+  handleAdminLatency(payload) {
+    if (this.match) {
+      this.match.setLatencyConfig(payload);
     }
   }
 
@@ -298,6 +324,10 @@ export class Room extends EventEmitter {
   async close() {
     if (this._isClosed) return;
     this._isClosed = true;
+
+    if (this.match) {
+      this.match.stop();
+    }
 
     // Enqueue final closure event
     this._logQueue.push({

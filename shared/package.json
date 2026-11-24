@@ -1,0 +1,15 @@
+{
+  "name": "shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./sim": "./src/sim/index.js",
+    "./sim/*": "./src/sim/*.js",
+    "./protocol": "./src/protocol/index.js",
+    "./codec": "./src/codec/index.js",
+    "./prng": "./src/prng.js"
+  }
+}

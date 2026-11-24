@@ -35,6 +35,27 @@ export async function handleApi(req, res, roomManager, config) {
     return;
   }
 
+  // 1b. GET /api/stats
+  if ((pathname === '/api/stats' || pathname === '/api/stats.json') && method === 'GET') {
+    const matches = Array.from(roomManager.rooms.values())
+      .map((r) => (r.match ? r.match.getStats() : null))
+      .filter(Boolean);
+
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store',
+    });
+    res.end(
+      JSON.stringify({
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        totalRooms: roomManager.rooms.size,
+        matches,
+      })
+    );
+    return;
+  }
+
   // 2. GET /api/rooms
   if (pathname === '/api/rooms' && method === 'GET') {
     const rooms = roomManager.listRooms();

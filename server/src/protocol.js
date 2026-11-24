@@ -2,13 +2,18 @@
  * server/src/protocol.js
  * Versioned WebSocket message schemas and validation.
  */
+import { PROTOCOL_VERSION, WS_CLOSE_CODES, validateInputPayload } from 'shared/protocol';
 
-export const PROTOCOL_VERSION = 1;
+export { PROTOCOL_VERSION, WS_CLOSE_CODES };
 
 export const INCOMING_TYPES = Object.freeze({
   JOIN: 'join',
   CHAT: 'chat',
   LEAVE: 'leave',
+  INPUT: 'input',
+  PING: 'ping',
+  ADMIN_LATENCY: 'admin_latency',
+  SET_CODEC: 'set_codec',
 });
 
 export const OUTGOING_TYPES = Object.freeze({
@@ -16,18 +21,8 @@ export const OUTGOING_TYPES = Object.freeze({
   ROSTER: 'roster',
   CHAT: 'chat',
   ERROR: 'error',
-});
-
-// Standard WebSocket close codes (RFC 6455 & application conventions)
-export const WS_CLOSE_CODES = Object.freeze({
-  NORMAL_CLOSURE: 1000,
-  GOING_AWAY: 1001,
-  PROTOCOL_ERROR: 1002,
-  UNSUPPORTED_DATA: 1003,
-  INVALID_PAYLOAD: 1007,
-  POLICY_VIOLATION: 1008,
-  MESSAGE_TOO_BIG: 1009,
-  JOIN_TIMEOUT: 4001,
+  SNAPSHOT: 'snapshot',
+  PONG: 'pong',
 });
 
 /**
@@ -66,7 +61,10 @@ export function validateMessage(msg) {
   const { type, payload } = msg;
 
   if (type === INCOMING_TYPES.LEAVE) {
-    // Leave payload is optional or empty object
+    return { valid: true, value: msg };
+  }
+
+  if (type === INCOMING_TYPES.PING) {
     return { valid: true, value: msg };
   }
 
@@ -120,6 +118,22 @@ export function validateMessage(msg) {
         error: 'Chat message text exceeds maximum length (1000 characters)',
       };
     }
+    return { valid: true, value: msg };
+  }
+
+  if (type === INCOMING_TYPES.INPUT) {
+    const val = validateInputPayload(payload);
+    if (!val.valid) {
+      return {
+        valid: false,
+        code: WS_CLOSE_CODES.INVALID_PAYLOAD,
+        error: val.error,
+      };
+    }
+    return { valid: true, value: { ...msg, payload: val.sanitized } };
+  }
+
+  if (type === INCOMING_TYPES.ADMIN_LATENCY) {
     return { valid: true, value: msg };
   }
 
