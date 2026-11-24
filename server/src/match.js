@@ -129,6 +129,20 @@ export class Match {
       }
     });
 
+    // Handle destroyed player ships respawning safely after 2.0s
+    for (const ship of this.playerShips.values()) {
+      if (!ship.alive) {
+        ship.respawnCooldown = (ship.respawnCooldown || 2.0) - this.dt;
+        if (ship.respawnCooldown <= 0) {
+          const angle = (this.playerShips.size * Math.PI) / 2 + Math.random() * 0.5;
+          const x = 600 + Math.cos(angle) * 250;
+          const y = 400 + Math.sin(angle) * 250;
+          ship.reset(x, y, -Math.PI / 2);
+          ship.respawnCooldown = 0;
+        }
+      }
+    }
+
     // 4. Measure execution duration
     const tickEnd = performance.now();
     this.lastTickDuration = tickEnd - tickStart;

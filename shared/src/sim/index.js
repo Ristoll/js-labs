@@ -10,3 +10,4 @@ export * from './collision.js';
 export * from './world.js';
 export * from './events.js';
 export * from './homing.js';
+export * from './interpolation.js';

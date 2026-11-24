@@ -90,7 +90,11 @@
         </div>
         <div class="netgraph-row">
           <span class="net-lbl">Reconciliation:</span
-          ><span id="net-correction" class="net-val">0.0 px (No Pred)</span>
+          ><span id="net-correction" class="net-val">0.0 px</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Interp Delay:</span
+          ><span id="net-interp" class="net-val">66 ms (Interp)</span>
         </div>
 
         <div class="netgraph-controls">
@@ -124,6 +128,10 @@
             <label class="net-slider-label"
               >Drop: <span id="val-drop">0</span>%
               <input type="range" id="slider-drop" min="0" max="20" step="1" value="0"
+            /></label>
+            <label class="net-slider-label"
+              >Interp Delay: <span id="val-interp">66</span>ms
+              <input type="range" id="slider-interp" min="10" max="250" step="5" value="66"
             /></label>
           </div>
         </div>

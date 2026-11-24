@@ -6,6 +6,7 @@ import { Explosion } from './sim/explosion.js';
 import { Pickup } from './sim/pickup.js';
 import { World } from './sim/world.js';
 import { createArena, wrapAround } from './sim/arena.js';
+import { SnapshotBuffer } from './sim/interpolation.js';
 import { findCollisions, resolveCollisions } from './sim/collision.js';
 import { Vector2 } from './sim/vector.js';
 import { setupCanvas } from './render/canvas.js';
@@ -90,6 +91,7 @@ let inputSeq = 1;
 let pendingInputs = [];
 let netgraph = null;
 let breakDeterminismActive = false;
+const snapshotBuffer = new SnapshotBuffer(66.67);
 
 window.breakDeterminism = (active) => {
   breakDeterminismActive = typeof active === 'boolean' ? active : !breakDeterminismActive;
@@ -242,6 +244,60 @@ const loop = createLoop({
           ship.renderOffset.x = 0;
           ship.renderOffset.y = 0;
         }
+      }
+
+      // --- M3: Remote Entity Interpolation ---
+      const interp = snapshotBuffer.interpolate(performance.now(), arena);
+      netgraph?.setInterpStatus(interp.status, snapshotBuffer.interpolationDelay);
+
+      if (interp.entities && interp.entities.length > 0) {
+        for (const rent of interp.entities) {
+          // Skip local predicted ship
+          if (ship && (rent.playerId === myPlayerId || rent.id === ship.id)) {
+            continue;
+          }
+
+          // Local bullet reconciliation: if a server bullet matches our predicted bullet, replace it
+          if (rent.kind === 'bullet' && rent.ownerId === myPlayerId) {
+            for (const b of world.ofKind('bullet')) {
+              if (b.ownerId === myPlayerId && b.id !== rent.id) {
+                world.despawn(b.id);
+                break;
+              }
+            }
+          }
+
+          const existing = world.get(rent.id);
+          if (existing) {
+            existing.x = rent.x;
+            existing.y = rent.y;
+            existing.vx = rent.vx;
+            existing.vy = rent.vy;
+            existing.angle = rent.angle;
+            existing.alive = rent.alive;
+            if (existing.kind === 'ship') {
+              existing.thrust = rent.thrust;
+              existing.reverse = rent.reverse;
+              if (typeof rent.hp === 'number') existing.heal(rent.hp - existing.hp);
+            }
+          } else {
+            const spawned = World.fromSnapshot([rent]).get(rent.id);
+            if (spawned) {
+              world.spawn(spawned);
+            }
+          }
+        }
+
+        // Handle entities disappearing / destroyed between snapshots
+        const interpIds = new Set(interp.entities.map((e) => e.id));
+        for (const ent of world) {
+          if (ship && ent.id === ship.id) continue;
+          if (ent.kind === 'bullet' && ent.ownerId === myPlayerId && ent.ttl > 0) continue;
+          if (!interpIds.has(ent.id)) {
+            world.despawn(ent.id);
+          }
+        }
+        world.sweep();
       }
 
       return;
@@ -474,6 +530,9 @@ function initMultiplayer({ room, playerName }) {
   socket.connect();
 
   netgraph = new NetgraphUI(socket);
+  netgraph.onInterpDelayChange = (delay) => {
+    snapshotBuffer.setDelay(delay);
+  };
   netgraph.show();
 
   socket.addEventListener('open', () => {
@@ -490,6 +549,9 @@ function initMultiplayer({ room, playerName }) {
 
   socket.addEventListener('snapshot', (e) => {
     const { lastProcessedSeq, entities } = e.detail;
+
+    // Push into M3 snapshot interpolation buffer
+    snapshotBuffer.push(e.detail, performance.now());
 
     // 1. Acknowledge processed input sequences
     if (lastProcessedSeq && myPlayerId && typeof lastProcessedSeq[myPlayerId] === 'number') {
@@ -544,45 +606,6 @@ function initMultiplayer({ room, playerName }) {
         ship.renderOffset.y = 0;
       }
     }
-
-    // 3. Update remote entities (other ships, asteroids, pickups)
-    for (const entSnap of entities) {
-      if (
-        entSnap.kind === 'ship' &&
-        (entSnap.playerId === myPlayerId || (ship && entSnap.id === ship.id))
-      ) {
-        continue;
-      }
-
-      const existing = world.get(entSnap.id);
-      if (existing) {
-        existing.x = entSnap.x;
-        existing.y = entSnap.y;
-        existing.vx = entSnap.vx;
-        existing.vy = entSnap.vy;
-        existing.angle = entSnap.angle;
-        existing.alive = entSnap.alive;
-        if (existing.kind === 'ship') {
-          existing.thrust = entSnap.thrust;
-          existing.reverse = entSnap.reverse;
-        }
-      } else {
-        const spawned = World.fromSnapshot([entSnap]).get(entSnap.id);
-        if (spawned) {
-          world.spawn(spawned);
-        }
-      }
-    }
-
-    // Despawn entities removed on server
-    const currentServerIds = new Set(entities.map((ent) => ent.id));
-    for (const ent of world) {
-      if (ship && ent.id === ship.id) continue;
-      if (!currentServerIds.has(ent.id)) {
-        world.despawn(ent.id);
-      }
-    }
-    world.sweep();
   });
 
   socket.addEventListener('roster', (e) => {

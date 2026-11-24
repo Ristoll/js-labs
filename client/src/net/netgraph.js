@@ -11,14 +11,17 @@ export class NetgraphUI {
     this.bandwidthEl = document.getElementById('net-bandwidth');
     this.pendingEl = document.getElementById('net-pending');
     this.correctionEl = document.getElementById('net-correction');
+    this.interpEl = document.getElementById('net-interp');
 
     this.valDelayEl = document.getElementById('val-delay');
     this.valJitterEl = document.getElementById('val-jitter');
     this.valDropEl = document.getElementById('val-drop');
+    this.valInterpEl = document.getElementById('val-interp');
 
     this.sliderDelay = document.getElementById('slider-delay');
     this.sliderJitter = document.getElementById('slider-jitter');
     this.sliderDrop = document.getElementById('slider-drop');
+    this.sliderInterp = document.getElementById('slider-interp');
 
     this.presetButtons = document.querySelectorAll('.net-btn:not(.net-btn-toggle)');
     this.toggleDeterminismBtn = document.getElementById('btn-toggle-determinism');
@@ -34,6 +37,9 @@ export class NetgraphUI {
     this.pendingInputCount = 0;
     this.correctionMagnitude = 0;
     this.isDeterminismBroken = false;
+    this.interpDelay = 66;
+    this.interpStatus = 'Interpolating';
+    this.onInterpDelayChange = null;
 
     this._setupControls();
     this._startMetricsLoop();
@@ -59,6 +65,11 @@ export class NetgraphUI {
     this.correctionMagnitude = px;
   }
 
+  setInterpStatus(status, delay = null) {
+    if (status) this.interpStatus = status;
+    if (typeof delay === 'number') this.interpDelay = Math.round(delay);
+  }
+
   _setupControls() {
     if (this.minimizeBtn && this.bodyEl) {
       this.minimizeBtn.addEventListener('click', () => {
@@ -82,6 +93,15 @@ export class NetgraphUI {
     this.sliderDelay?.addEventListener('input', applyFromSliders);
     this.sliderJitter?.addEventListener('input', applyFromSliders);
     this.sliderDrop?.addEventListener('input', applyFromSliders);
+
+    this.sliderInterp?.addEventListener('input', () => {
+      const delay = Number(this.sliderInterp.value || 66);
+      this.interpDelay = delay;
+      if (this.valInterpEl) this.valInterpEl.textContent = delay;
+      if (typeof this.onInterpDelayChange === 'function') {
+        this.onInterpDelayChange(delay);
+      }
+    });
 
     this.presetButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -175,6 +195,10 @@ export class NetgraphUI {
 
     if (this.correctionEl) {
       this.correctionEl.textContent = `${this.correctionMagnitude.toFixed(1)} px (No Pred)`;
+    }
+
+    if (this.interpEl) {
+      this.interpEl.textContent = `${this.interpDelay} ms (${this.interpStatus})`;
     }
   }
 }
