@@ -1,8 +1,10 @@
 /**
- * Serialization codec.
- * Milestone 1 uses JSON encoding/decoding.
- * Milestone 4 will add binary DataView codec.
+ * Serialization codecs for Lab 05.
+ * Milestone 1 introduced JsonCodec.
+ * Milestone 4 introduces high-performance DataView BinaryCodec.
  */
+import { BinaryCodec, BINARY_MSG_TYPE, BINARY_ENTITY_KIND } from './binary.js';
+
 export class JsonCodec {
   static encode(message) {
     return JSON.stringify(message);
@@ -25,4 +27,5 @@ export class JsonCodec {
   }
 }
 
-export const defaultCodec = JsonCodec;
+export { BinaryCodec, BINARY_MSG_TYPE, BINARY_ENTITY_KIND };
+export const defaultCodec = BinaryCodec;

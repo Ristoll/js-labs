@@ -13,6 +13,7 @@ export const INCOMING_TYPES = Object.freeze({
   INPUT: 'input',
   PING: 'ping',
   ADMIN_LATENCY: 'admin_latency',
+  SET_CODEC: 'set_codec',
 });
 
 export const OUTGOING_TYPES = Object.freeze({

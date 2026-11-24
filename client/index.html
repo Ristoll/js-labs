@@ -96,6 +96,10 @@
           <span class="net-lbl">Interp Delay:</span
           ><span id="net-interp" class="net-val">66 ms (Interp)</span>
         </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Codec:</span
+          ><span id="net-codec" class="net-val">BINARY (DataView)</span>
+        </div>
 
         <div class="netgraph-controls">
           <div class="netgraph-ctrl-title">LATENCY INJECTOR</div>
@@ -107,6 +111,13 @@
             </button>
             <button class="net-btn" data-delay="150" data-jitter="30" data-drop="0.02">
               150ms+Jitter
+            </button>
+            <button
+              id="btn-toggle-codec"
+              class="net-btn net-btn-toggle active"
+              style="grid-column: span 2"
+            >
+              Codec: BINARY
             </button>
             <button
               id="btn-toggle-determinism"

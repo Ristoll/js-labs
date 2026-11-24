@@ -12,6 +12,7 @@ export class NetgraphUI {
     this.pendingEl = document.getElementById('net-pending');
     this.correctionEl = document.getElementById('net-correction');
     this.interpEl = document.getElementById('net-interp');
+    this.codecEl = document.getElementById('net-codec');
 
     this.valDelayEl = document.getElementById('val-delay');
     this.valJitterEl = document.getElementById('val-jitter');
@@ -25,6 +26,7 @@ export class NetgraphUI {
 
     this.presetButtons = document.querySelectorAll('.net-btn:not(.net-btn-toggle)');
     this.toggleDeterminismBtn = document.getElementById('btn-toggle-determinism');
+    this.toggleCodecBtn = document.getElementById('btn-toggle-codec');
     this.minimizeBtn = document.getElementById('btn-toggle-netgraph');
     this.bodyEl = document.getElementById('netgraph-body');
 
@@ -124,6 +126,18 @@ export class NetgraphUI {
       });
     });
 
+    if (this.toggleCodecBtn) {
+      this.toggleCodecBtn.addEventListener('click', () => {
+        const next = this.socket.codec === 'binary' ? 'json' : 'binary';
+        this.socket.setCodec(next);
+        this.toggleCodecBtn.textContent = `Codec: ${next.toUpperCase()}`;
+        this.toggleCodecBtn.classList.toggle('active', next === 'binary');
+        if (this.codecEl) {
+          this.codecEl.textContent = next === 'binary' ? 'BINARY (DataView)' : 'JSON';
+        }
+      });
+    }
+
     if (this.toggleDeterminismBtn) {
       this.toggleDeterminismBtn.addEventListener('click', () => {
         if (typeof window.breakDeterminism === 'function') {
@@ -199,6 +213,10 @@ export class NetgraphUI {
 
     if (this.interpEl) {
       this.interpEl.textContent = `${this.interpDelay} ms (${this.interpStatus})`;
+    }
+
+    if (this.codecEl) {
+      this.codecEl.textContent = this.socket.codec === 'binary' ? 'BINARY (DataView)' : 'JSON';
     }
   }
 }

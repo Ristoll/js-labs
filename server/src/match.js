@@ -1,6 +1,6 @@
 import { World, createArena, Ship, Asteroid, findCollisions, resolveCollisions } from 'shared/sim';
 import { createMulberry32 } from 'shared/prng';
-import { JsonCodec } from 'shared/codec';
+import { JsonCodec, BinaryCodec } from 'shared/codec';
 import { PROTOCOL_VERSION, MESSAGE_TYPES } from 'shared/protocol';
 
 export class Match {
@@ -13,6 +13,7 @@ export class Match {
     this.tickRate = options.tickRate || 30;
     this.intervalMs = 1000 / this.tickRate;
     this.dt = 1 / this.tickRate;
+    this.defaultCodec = options.codec || null;
 
     this.arena = createArena(1200, 800);
     this.world = new World();
@@ -184,12 +185,30 @@ export class Match {
       },
     };
 
-    const encoded = JsonCodec.encode(snapshotMsg);
+    let binaryData = null;
+    let jsonData = null;
 
     for (const player of this.room.players.values()) {
       if (player.ws && player.ws.readyState === 1) {
         // OPEN
-        this.sendWithLatency(player.ws, player, encoded);
+        const useBinary = player.ws.preferredCodec
+          ? player.ws.preferredCodec === 'binary'
+          : this.defaultCodec === 'binary';
+
+        let dataToSend;
+        if (useBinary) {
+          if (!binaryData) {
+            binaryData = BinaryCodec.encode(snapshotMsg);
+          }
+          dataToSend = binaryData;
+        } else {
+          if (!jsonData) {
+            jsonData = JsonCodec.encode(snapshotMsg);
+          }
+          dataToSend = jsonData;
+        }
+
+        this.sendWithLatency(player.ws, player, dataToSend);
       }
     }
   }

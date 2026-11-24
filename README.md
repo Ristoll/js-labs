@@ -448,3 +448,25 @@ HTTP/1.1 client sends an `Upgrade: websocket` request with `Sec-WebSocket-Key`. 
 4. **Heartbeat (Ping/Pong):** Every 15 seconds, the server sends `ping`. Sockets missing 2 consecutive pings are terminated.
 5. **Slow Client Protection:** Sockets accumulating > 1 MB in `ws.bufferedAmount` are closed with code `1008` to protect server memory.
 6. **Graceful Shutdown:** On `SIGINT`/`SIGTERM`, existing WebSocket clients are closed with code `1001` (Going away), rooms are flushed, and the HTTP server closes cleanly without dropping in-flight responses.
+
+---
+
+## 5. Lab 05 — Real-Time Networking: Authoritative Server, Prediction & Binary Protocol
+
+### Netcode Overview & Architecture
+
+- **Shared Simulation (`shared/`):** Pure deterministic physics engine imported by both browser client and Node.js server.
+- **Authoritative Server (30 Hz):** Server-side `Match` loop executing with absolute-target timer, input sanitization, and per-client `lastProcessedSeq` acknowledgment.
+- **Client-Side Prediction & Server Reconciliation:** Instant 0 ms responsiveness for local player ship, pending input buffer replay, and exponential error smoothing (`decay = Math.exp(-15 * dt)`).
+- **Entity Interpolation:** Remote entities buffered and rendered in the past (`interpolationDelay = 66.7 ms`) with toroidal boundary wrapping and shortest circular arc angle interpolation.
+- **Local Bullet Prediction:** Bullets spawn instantly locally with authoritative server replacement upon snapshot arrival.
+- **Binary Protocol (`DataView`):** Compact, versioned, Little-Endian binary protocol quantizing rotation angles to `Int16` in $1/1000$ radians ($\pm 0.001$ rad $\approx 0.057^\circ$, subpixel precision $< 0.02$ px).
+
+### JSON vs Binary (`DataView`) Codec Benchmark (30 Hz, 4 Players)
+
+| Codec                   | Bytes/snapshot | KB/s per client (down) | KB/s per client (up) | Encode+decode µs |
+| :---------------------- | :------------- | :--------------------- | :------------------- | :--------------- |
+| **JSON**                | 1609           | 47.14                  | 3.25                 | 16.55            |
+| **Binary (`DataView`)** | **425**        | **12.45**              | **0.38**             | 29.48            |
+
+> **Bandwidth Savings:** Binary encoding saves **73.6%** of downstream bandwidth and **88.3%** of upstream bandwidth compared to JSON, processing a full frame encode+decode in under 30 µs.

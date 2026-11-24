@@ -8,6 +8,7 @@ export const MESSAGE_TYPES = Object.freeze({
   INPUT: 'input',
   PING: 'ping',
   ADMIN_LATENCY: 'admin_latency',
+  SET_CODEC: 'set_codec',
 
   // Server -> Client
   JOINED: 'joined',

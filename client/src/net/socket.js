@@ -1,3 +1,5 @@
+import { JsonCodec, BinaryCodec } from 'shared/codec';
+
 /**
  * Client WebSocket manager for Lab 04 & Lab 05
  */
@@ -17,6 +19,7 @@ export class GameSocket extends EventTarget {
     this.playerInfo = null;
     this.playerId = null;
     this.closedExplicitly = false;
+    this.codec = 'binary'; // 'binary' (DataView) or 'json'
 
     // Telemetry & metrics
     this.bytesIn = 0;
@@ -30,6 +33,7 @@ export class GameSocket extends EventTarget {
     this.closedExplicitly = false;
     try {
       this.ws = new WebSocket(this.url);
+      this.ws.binaryType = 'arraybuffer';
     } catch (_err) {
       this._scheduleReconnect();
       return;
@@ -53,7 +57,13 @@ export class GameSocket extends EventTarget {
       this.bytesIn += dataLen;
 
       try {
-        const msg = JSON.parse(event.data);
+        let msg;
+        if (typeof event.data === 'string') {
+          msg = JsonCodec.decode(event.data);
+        } else {
+          msg = BinaryCodec.decode(event.data);
+        }
+
         if (msg.type === 'joined') {
           this.playerId = msg.payload.playerId;
         } else if (msg.type === 'pong') {
@@ -69,8 +79,8 @@ export class GameSocket extends EventTarget {
           this.dispatchEvent(new CustomEvent(msg.type, { detail: msg.payload }));
         }
         this.dispatchEvent(new CustomEvent('message', { detail: msg }));
-      } catch (_err) {
-        console.error('[GameSocket] Invalid JSON message received:', event.data);
+      } catch (err) {
+        console.error('[GameSocket] Invalid message received:', err, event.data);
       }
     };
 
@@ -109,19 +119,28 @@ export class GameSocket extends EventTarget {
     }, delay);
   }
 
-  send(type, payload = {}) {
-    const msg = JSON.stringify({
-      v: 1,
-      type,
-      payload,
-    });
+  setCodec(codec) {
+    this.codec = codec === 'json' ? 'json' : 'binary';
+    if (this.isConnected) {
+      this.send('set_codec', { codec: this.codec });
+    }
+    this.dispatchEvent(new CustomEvent('codec_changed', { detail: { codec: this.codec } }));
+  }
 
-    this.bytesOut += msg.length;
+  send(type, payload = {}) {
+    let data;
+    if (this.codec === 'binary' && (type === 'input' || type === 'snapshot')) {
+      data = BinaryCodec.encode({ v: 1, type, payload });
+      this.bytesOut += data.byteLength;
+    } else {
+      data = JsonCodec.encode({ v: 1, type, payload });
+      this.bytesOut += data.length;
+    }
 
     if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(msg);
+      this.ws.send(data);
     } else {
-      this.sendQueue.push(msg);
+      this.sendQueue.push(data);
     }
   }
 
@@ -131,8 +150,8 @@ export class GameSocket extends EventTarget {
       this.isConnected &&
       this.ws?.readyState === WebSocket.OPEN
     ) {
-      const msg = this.sendQueue.shift();
-      this.ws.send(msg);
+      const data = this.sendQueue.shift();
+      this.ws.send(data);
     }
   }
 
@@ -142,6 +161,7 @@ export class GameSocket extends EventTarget {
     this.send('join', {
       roomId,
       playerName,
+      codec: this.codec,
     });
   }
 

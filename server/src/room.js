@@ -222,7 +222,15 @@ export class Room extends EventEmitter {
       ws.close(1008, 'Slow client buffer exceeded');
       return;
     }
-    ws.send(payload);
+    if (payload instanceof ArrayBuffer) {
+      ws.send(Buffer.from(payload), { binary: true });
+    } else if (ArrayBuffer.isView(payload)) {
+      ws.send(Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength), {
+        binary: true,
+      });
+    } else {
+      ws.send(payload);
+    }
   }
 
   broadcast(message, senderWs = null) {
