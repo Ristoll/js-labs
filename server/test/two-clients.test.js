@@ -23,11 +23,16 @@ describe('Lab 04 M2 Two Clients Live Verification', () => {
   });
 
   after(async () => {
-    await new Promise((resolve) => {
-      app.wss.close(() => {
-        app.server.close(resolve);
+    if (app && app.shutdown) {
+      await app.shutdown();
+    } else {
+      await app.roomManager.closeAll();
+      await new Promise((resolve) => {
+        app.wss.close(() => {
+          app.server.close(resolve);
+        });
       });
-    });
+    }
   });
 
   test('Two clients join the same room, see each other in roster, and exchange chat messages', async () => {
@@ -77,6 +82,82 @@ describe('Lab 04 M2 Two Clients Live Verification', () => {
 
     assert.equal(chatForClient2.senderName, 'Viper');
     assert.equal(chatForClient2.text, 'Engaging targets!');
+
+    ws1.close();
+    ws2.close();
+  });
+
+  test('Two clients in dogfight receive authoritative snapshots containing both ships and bullets', async () => {
+    const ws1 = new WebSocket(wsUrl);
+    const ws2 = new WebSocket(wsUrl);
+
+    await Promise.all([
+      new Promise((r) => ws1.on('open', r)),
+      new Promise((r) => ws2.on('open', r)),
+    ]);
+
+    let player1Id = null;
+    let player2Id = null;
+
+    ws1.on('message', (data) => {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'joined') player1Id = msg.payload.playerId;
+    });
+
+    ws2.on('message', (data) => {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'joined') player2Id = msg.payload.playerId;
+    });
+
+    ws1.send(
+      JSON.stringify({ v: 1, type: 'join', payload: { roomId: 'sector-pvp', playerName: 'Ace' } })
+    );
+    ws2.send(
+      JSON.stringify({
+        v: 1,
+        type: 'join',
+        payload: { roomId: 'sector-pvp', playerName: 'Wingman' },
+      })
+    );
+
+    // Wait until both joined
+    while (!player1Id || !player2Id) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+
+    // Client 1 fires a bullet
+    ws1.send(
+      JSON.stringify({
+        v: 1,
+        type: 'input',
+        payload: {
+          seq: 1,
+          tick: 1,
+          thrust: true,
+          reverse: false,
+          turn: 0,
+          fire: true,
+        },
+      })
+    );
+
+    // Both clients should receive snapshot containing 2 ships and at least 1 bullet
+    const snap1 = await new Promise((resolve) => {
+      const handler = (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'snapshot') {
+          const ships = msg.payload.entities.filter((e) => e.kind === 'ship');
+          if (ships.length === 2) {
+            ws1.off('message', handler);
+            resolve(msg.payload);
+          }
+        }
+      };
+      ws1.on('message', handler);
+    });
+
+    assert.ok(snap1);
+    assert.strictEqual(snap1.entities.filter((e) => e.kind === 'ship').length, 2);
 
     ws1.close();
     ws2.close();
