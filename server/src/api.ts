@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { streamReplayFile } from './streams.ts';
+import { BotManager } from './bot-manager.ts';
 import type { ServerResponse, IncomingMessage } from 'node:http';
 import type { RoomManager } from './room-manager.ts';
 import type { ServerConfig } from './config.ts';
@@ -8,6 +9,9 @@ import type { ServerConfig } from './config.ts';
 export interface ApiErrorBody {
   error: string;
 }
+
+/** One BotManager per room, keyed by room id. */
+const botManagers = new Map<string, BotManager>();
 
 function isString(value: unknown): value is string {
   return typeof value === 'string';
@@ -25,6 +29,21 @@ function writeJson(
 ): void {
   res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8', ...extraHeaders });
   res.end(JSON.stringify(body));
+}
+
+function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString() || '{}'));
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', reject);
+  });
 }
 
 /**
@@ -155,6 +174,46 @@ export async function handleApi(
         writeJson(res, 400, { error: err instanceof Error ? err.message : String(err) });
       }
     });
+    return;
+  }
+
+  // 3b. POST /api/rooms/:id/bots — add N server-side bots to a room.
+  const botsMatch = pathname.match(/^\/api\/rooms\/([^/]+)\/bots$/);
+  if (botsMatch && method === 'POST') {
+    const roomId = decodeURIComponent(botsMatch[1] ?? '');
+    const room = roomManager.getRoom(roomId);
+    if (!room) {
+      writeJson(res, 404, { error: 'Room not found' });
+      return;
+    }
+    const match = room.match;
+    if (!match) {
+      writeJson(res, 409, { error: 'Match not initialized' });
+      return;
+    }
+
+    const body = await readBody(req);
+    const countRaw = body.count;
+    let count = 1;
+    if (countRaw !== undefined && countRaw !== null) {
+      const parsed = Number(countRaw);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 64) {
+        writeJson(res, 400, { error: 'Invalid count (must be between 1 and 64)' });
+        return;
+      }
+      count = parsed;
+    }
+
+    let bm = botManagers.get(roomId);
+    if (!bm) {
+      bm = new BotManager(match, room);
+      botManagers.set(roomId, bm);
+    }
+
+    const names = Array.from({ length: count }, (_, i) => `Bot-${roomId.slice(0, 4)}-${i + 1}`);
+    const added = bm.addBots(names);
+
+    writeJson(res, 201, { roomId, addedCount: added.length, botIds: added });
     return;
   }
 

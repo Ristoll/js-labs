@@ -34,30 +34,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">72.72% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>8/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.33% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>5/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">72.72% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>8/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
@@ -72,7 +72,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -124,28 +124,28 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">204x</span>
+<span class="cline-any cline-yes">205x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">204x</span>
-<span class="cline-any cline-yes">202x</span>
+<span class="cline-any cline-yes">206x</span>
+<span class="cline-any cline-yes">203x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -173,18 +173,18 @@ export class JsonCodec implements Codec {
     if (data instanceof ArrayBuffer) {
       return JSON.parse(new TextDecoder().decode(data));
     }
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (ArrayBuffer.isView(data)) {
+    if (ArrayBuffer.isView(data)) {
       return JSON.parse(new TextDecoder().decode(data));
     }
-<span class="cstat-no" title="statement not covered" >    return JSON.parse(String(data));</span>
+    return JSON.parse(String(data));
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  encode(m</span>essage: unknown): string | ArrayBuffer {
-<span class="cstat-no" title="statement not covered" >    return JsonCodec.encode(message);</span>
+  encode(message: unknown): string | ArrayBuffer {
+    return JsonCodec.encode(message);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  decode(d</span>ata: string | ArrayBuffer): unknown {
-<span class="cstat-no" title="statement not covered" >    return JsonCodec.decode(data);</span>
+  decode(data: string | ArrayBuffer): unknown {
+    return JsonCodec.decode(data);
   }
 }
 &nbsp;
@@ -198,7 +198,7 @@ export { BinaryCodec, BINARY_MSG_TYPE, BINARY_ENTITY_KIND };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://vitest.dev/" target="_blank" rel="noopener noreferrer">Vitest</a>
-                at 2026-11-25T21:26:44.950Z
+                at 2026-11-25T22:27:42.845Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -107,3 +107,5 @@
 {"type":"room_closed","timestamp":1795638572198,"data":{"roomId":"beta"}}
 {"type":"room_created","timestamp":1795642763804,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
 {"type":"room_created","timestamp":1795642923502,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795644322040,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795644506218,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}

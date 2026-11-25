@@ -10,9 +10,10 @@ import type { ClientInput } from './match.ts';
 export interface Player {
   id: string;
   name: string;
-  ws: WebSocket;
+  ws?: WebSocket;
   joinedAt: number;
   preferredCodec: 'json' | 'binary' | null;
+  isBot?: boolean;
 }
 
 export interface RoomOptions {
@@ -246,7 +247,7 @@ export class Room extends EventEmitter<RoomEvents> {
     return player;
   }
 
-  _safeSend(ws: WebSocket, player: Player, payload: string | ArrayBuffer): void {
+  _safeSend(ws: WebSocket | undefined, player: Player, payload: string | ArrayBuffer): void {
     if (!ws || ws.readyState !== 1) return; // 1 = OPEN
     if (ws.bufferedAmount > this.maxBufferedAmount) {
       console.warn(

@@ -42,6 +42,8 @@ describe('interpolation lerp', () => {
     expect(lerpCoordinate(0, 10, 0.5, 0)).toBe(5);
     // boundary wrap: from 990 to 20 on width 1000 -> midpoint wraps to 5
     expect(lerpCoordinate(990, 20, 0.5, 1000)).toBeCloseTo(5, 6);
+    // boundary wrap: delta > half subtracts boundary
+    expect(lerpCoordinate(20, 990, 0.5, 1000)).toBeCloseTo(5, 6);
     // boundary <= 0 falls back to lerp
     expect(lerpCoordinate(0, 10, 0.5, -1)).toBe(5);
   });
@@ -130,5 +132,21 @@ describe('SnapshotBuffer', () => {
     expect(r.s0Tick).toBe(1);
     expect(r.s1Tick).toBe(2);
     expect(r.entities[0].x).toBe(50);
+  });
+
+  it('push sorts buffer when frames arrive out of order', () => {
+    const buf = new SnapshotBuffer(0);
+    buf.push({ timestamp: baseTime + 100, tick: 2, entities: [] }, baseTime + 100);
+    buf.push({ timestamp: baseTime, tick: 1, entities: [] }, baseTime);
+    expect(buf.size).toBe(2);
+    expect(buf.interpolate(baseTime + 50).status).toBe('interpolating');
+  });
+
+  it('push shifts oldest frame when over maxBufferSize', () => {
+    const buf = new SnapshotBuffer(0, 2);
+    buf.push({ timestamp: baseTime, tick: 1, entities: [] }, baseTime);
+    buf.push({ timestamp: baseTime + 10, tick: 2, entities: [] }, baseTime + 10);
+    buf.push({ timestamp: baseTime + 20, tick: 3, entities: [] }, baseTime + 20);
+    expect(buf.size).toBe(2);
   });
 });

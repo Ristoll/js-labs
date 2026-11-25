@@ -115,4 +115,72 @@ describe('codec properties', () => {
     const binaryBytes = BinaryCodec.encode(snapshot).byteLength;
     expect(binaryBytes).toBeLessThan(jsonBytes * 0.3);
   });
+
+  function snapHeader(byteLength: number, ackCount: number, entityCount: number): ArrayBuffer {
+    const buf = new ArrayBuffer(byteLength);
+    const view = new DataView(buf);
+    view.setUint8(0, BINARY_MSG_TYPE.SNAPSHOT);
+    view.setUint8(1, PROTOCOL_VERSION);
+    view.setUint16(14, ackCount, true);
+    if (byteLength >= 18) {
+      view.setUint16(16, entityCount, true);
+    }
+    return buf;
+  }
+
+  it('binary decode throws on truncated snapshot ACK section', () => {
+    // byteLength 16: enough for header + ackCount=1, but not the first ACK entry byte
+    expect(() => BinaryCodec.decode(snapHeader(16, 1, 0))).toThrow(/truncated snapshot ACK section/);
+  });
+
+  it('binary decode throws on truncated snapshot ACK entry', () => {
+    // byteLength 17: ackCount=1, one idLen byte present, but not the rest of the entry
+    const buf = snapHeader(17, 1, 0);
+    new DataView(buf).setUint8(16, 0); // idLen = 0
+    expect(() => BinaryCodec.decode(buf)).toThrow(/truncated snapshot ACK entry/);
+  });
+
+  it('binary decode throws on truncated snapshot entity count', () => {
+    // byteLength 17: ackCount=0, enough for header but not the 2-byte entity count
+    expect(() => BinaryCodec.decode(snapHeader(17, 0, 0))).toThrow(/truncated snapshot entity count/);
+  });
+
+  it('binary decode throws on truncated snapshot entity', () => {
+    // byteLength 18: ackCount=0, entityCount=1 present, but not the 23 entity bytes
+    expect(() => BinaryCodec.decode(snapHeader(18, 0, 1))).toThrow(/truncated snapshot entity/);
+  });
+
+  it('binary decode handles GENERIC_JSON message', () => {
+    const payload = { hello: 'world' };
+    const jsonBytes = new TextEncoder().encode(JSON.stringify(payload));
+    const buffer = new ArrayBuffer(2 + jsonBytes.length);
+    const view = new DataView(buffer);
+    view.setUint8(0, BINARY_MSG_TYPE.GENERIC_JSON);
+    view.setUint8(1, PROTOCOL_VERSION);
+    new Uint8Array(buffer, 2).set(jsonBytes);
+    const decoded = BinaryCodec.decode(buffer);
+    expect(decoded).toEqual(payload);
+  });
+
+  it('binary decode throws on unknown message type', () => {
+    const buffer = new ArrayBuffer(2);
+    const view = new DataView(buffer);
+    view.setUint8(0, 0x03); // unknown msgType
+    view.setUint8(1, PROTOCOL_VERSION);
+    expect(() => BinaryCodec.decode(buffer)).toThrow(/unknown message type/);
+  });
+
+  it('json codec instance methods encode/decode round-trip', () => {
+    const codec = new JsonCodec();
+    const msg = { v: 1, type: 'ping' };
+    const encoded = codec.encode(msg);
+    expect(typeof encoded).toBe('string');
+    const decoded = codec.decode(encoded);
+    expect(decoded).toEqual(msg);
+  });
+
+  it('json decode fallback handles non-string/non-buffer input', () => {
+    const decoded = JsonCodec.decode(42 as unknown as string);
+    expect(decoded).toBe(42);
+  });
 });

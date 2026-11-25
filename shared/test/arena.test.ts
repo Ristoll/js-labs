@@ -31,4 +31,18 @@ describe('arena wrap-around', () => {
     expect(e.x).toBe(0);
     expect(e.y).toBe(0);
   });
+
+  it('skips x wrap when width is not positive', () => {
+    const e: { x: number; y: number } = { x: -5, y: 30 };
+    wrapAround(e, { width: 0, height: 100 });
+    expect(e.x).toBe(-5);
+    expect(e.y).toBe(30);
+  });
+
+  it('skips y wrap when height is not positive', () => {
+    const e: { x: number; y: number } = { x: 30, y: -5 };
+    wrapAround(e, { width: 100, height: 0 });
+    expect(e.x).toBe(30);
+    expect(e.y).toBe(-5);
+  });
 });

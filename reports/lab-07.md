@@ -124,3 +124,51 @@ Done. M3 adds a simulation/engine performance benchmark that measures game-loop 
 - `npm run benchmark:simulation` → completes all 4 entity counts, writes CSV + report (exit 0).
 - `npm run typecheck` → exit 0.
 - `npm run lint` → 0 errors (exit 0).
+
+---
+
+## Milestone 4 — Coverage thresholds + Web Worker load benchmark
+
+Done. M4 raises `shared/` coverage to meet the 85% threshold on all four metrics, adds a headless WebSocket load benchmark, and runs a Web Worker offload experiment for the entity position-update subsystem.
+
+### Coverage (≥ 85% on all metrics)
+
+Added targeted unit tests across `shared/test/` to close branch gaps:
+
+- `collision.test.ts` — `findCollisionPairs` generator, all six resolveCollisions pair orders (bullet/asteroid, ship/asteroid both directions, bullet/ship both directions incl. friendly-fire suppression), pickup-collected both directions, takeDamage/applyTo fallbacks, no-`onEvent` path.
+- `ship.test.ts` — `fire()` when not on cooldown, `isDown` function input, cooldown/rapidFireTimer decay, `integrate` plain-`ShipOptions` path, `createShip`, bullet `homing.update` path, `fromSnapshot` default fields.
+- `world.test.ts` — non-object snapshot skip, `spawn` validation errors, `despawn` Entity/null/noop targets, Record vs Map inputs, dead-entity sweep removal, `fromSnapshot` non-array/asteroid/pickup rebuild.
+- `binary.ts` (`codec-property.test.ts`) — truncated-snapshot ACK section/entry/entity-count/entity error guards, GENERIC_JSON decode, unknown-msgType throw, `JsonCodec` instance methods + decode fallback.
+- `arena.test.ts` — skip x/y wrap when width/height ≤ 0.
+- `homing.test.ts` — asteroid `homing.update` call path, `createRandom` avoidPos retry loop.
+- `interpolation.test.ts` — `lerpCoordinate` delta > half boundary wrap, out-of-order `push` sort, `maxBufferSize` shift eviction.
+- `protocol-property.test.ts` — non-string message type rejection, invalid join/chat payload rejection.
+
+### Results
+
+| Metric | Before M4 | After M4 | Threshold |
+|--------|-----------|----------|-----------|
+| Branches | 72.32% | **85.95%** (618/719) | 85% |
+| Statements | 84.96% | **96.39%** (937/972) | 85% |
+| Functions | 92.02% | **95.86%** (139/145) | 85% |
+| Lines | 85.84% | **97.63%** (910/932) | 85% |
+
+Uncovered remainder is `events.ts` (`SafeEventTarget`, inactive under Node's `EventTarget`) — intentional, not coverable in this environment.
+
+### WebSocket load benchmark
+
+- `server/benchmarks/load-test.js` — headless WS load test ramping 8 → 32 → 64 → 128 clients (6s per level), polls `/api/stats`, enforces a 33ms tick budget, writes CSV + markdown report + PNG chart (pure Node zlib/CRC32).
+- Result: capacity 128 clients; max tick 0.06ms, never over budget.
+
+### Web Worker experiment
+
+- `server/benchmarks/worker.js` + `server/benchmarks/worker-experiment.js` — compares inline entity position update vs worker round-trip with a transferable `Float32Array` across 100/1k/10k/100k entities, measuring ms per iteration over 200 iterations after warmup. Writes `worker-results.csv` and `worker-report.md` with a Go/No-Go decision.
+- Run: `node --experimental-strip-types server/benchmarks/worker-experiment.js`.
+
+### Verification
+
+- `npm test` → 165 tests pass across 19 files (exit 0; one intentional uncaught Error in `events.test.ts`).
+- Coverage thresholds: all four ≥ 85%.
+- `npm run typecheck` → exit 0 at root and all workspaces.
+- `npm run lint` → 0 errors.
+- `node --experimental-strip-types server/benchmarks/load-test.js` → completes (exit 0), writes CSV/report/chart.

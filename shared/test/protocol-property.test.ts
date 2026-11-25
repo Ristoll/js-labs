@@ -68,6 +68,22 @@ describe('protocol properties', () => {
     );
   });
 
+  it('parseClientMessage rejects a non-string message type', () => {
+    const result = parseClientMessage({ v: 1, type: 123 as unknown as string, payload: {} });
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe(WS_CLOSE_CODES.PROTOCOL_ERROR);
+  });
+
+  it('validateMessage rejects invalid join and chat payloads', () => {
+    const joinBad = validateMessage({ v: 1, type: 'join', payload: {} });
+    expect(joinBad.valid).toBe(false);
+    expect(joinBad.code).toBe(WS_CLOSE_CODES.INVALID_PAYLOAD);
+
+    const chatBad = validateMessage({ v: 1, type: 'chat', payload: {} });
+    expect(chatBad.valid).toBe(false);
+    expect(chatBad.code).toBe(WS_CLOSE_CODES.INVALID_PAYLOAD);
+  });
+
   it('non-object / malformed input returns protocol error (never throws)', () => {
     const junk: unknown[] = [null, undefined, 42, 'hello', [1, 2, 3], true, Symbol('x')];
     for (const bad of junk) {

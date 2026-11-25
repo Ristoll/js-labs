@@ -169,3 +169,5 @@
 {"type":"player_left","timestamp":1795642930501,"data":{"playerId":"player-mwwnfsgy-7gf2","name":"Pilot B","reason":""}}
 {"type":"player_left","timestamp":1795642930518,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A","reason":""}}
 {"type":"room_closed","timestamp":1795642930518,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795644322039,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795644506217,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}

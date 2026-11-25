@@ -34,16 +34,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">93.75% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">97.5% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>30/40</span>
+                <span class='fraction'>39/40</span>
             </div>
         
             
@@ -55,9 +55,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">93.75% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>15/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -237,7 +237,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -251,22 +251,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
-<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -290,7 +290,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -383,8 +383,8 @@ export class Bullet extends Entity {
   }
 &nbsp;
   override update(dt: number, world: unknown = null): void {
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (this.homing &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >world) {</span>
-<span class="cstat-no" title="statement not covered" >      this.homing.update(this, dt, world);</span>
+    if (this.homing &amp;&amp; world) {
+      this.homing.update(this, dt, world);
     }
     this.ttl -= dt;
     if (this.ttl &lt;= 0) {
@@ -418,13 +418,13 @@ export class Bullet extends Entity {
       id: snap.id,
       x: snap.x,
       y: snap.y,
-      vx: snap.vx ?? <span class="branch-1 cbranch-no" title="branch not covered" >0,</span>
-      vy: snap.vy ?? <span class="branch-1 cbranch-no" title="branch not covered" >0,</span>
-      angle: snap.angle ?? <span class="branch-1 cbranch-no" title="branch not covered" >0,</span>
-      radius: snap.radius ?? <span class="branch-1 cbranch-no" title="branch not covered" >3,</span>
-      ttl: snap.ttl ?? <span class="branch-1 cbranch-no" title="branch not covered" >1.4,</span>
-      damage: snap.damage ?? <span class="branch-1 cbranch-no" title="branch not covered" >1,</span>
-      alive: snap.alive ?? <span class="branch-1 cbranch-no" title="branch not covered" >true,</span>
+      vx: snap.vx ?? 0,
+      vy: snap.vy ?? 0,
+      angle: snap.angle ?? 0,
+      radius: snap.radius ?? 3,
+      ttl: snap.ttl ?? 1.4,
+      damage: snap.damage ?? 1,
+      alive: snap.alive ?? true,
       ownerId: snap.ownerId ?? null,
     });
   }
@@ -453,7 +453,7 @@ export class Bullet extends Entity {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://vitest.dev/" target="_blank" rel="noopener noreferrer">Vitest</a>
-                at 2026-11-25T21:26:44.950Z
+                at 2026-11-25T22:27:42.845Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

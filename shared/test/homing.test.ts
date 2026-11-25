@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HomingComponent } from '../src/sim/homing.ts';
 import { Entity } from '../src/sim/entity.ts';
 import { Vector2 } from '../src/sim/vector.ts';
+import { Asteroid } from '../src/sim/asteroid.ts';
 
 describe('HomingComponent', () => {
   const world = {
@@ -76,5 +77,19 @@ describe('HomingComponent', () => {
     expect(c.turnRate).toBe(2);
     expect(c.speed).toBe(50);
     expect(c.maxRange).toBe(60);
+  });
+
+  it('asteroid.update calls homing.update when homing set and world given', () => {
+    const asteroid = new Asteroid({ id: 1, x: 0, y: 0, radius: 5 });
+    let called = false;
+    asteroid.homing = { update: () => { called = true; }, clone: () => null } as any;
+    asteroid.update(0.01, {} as any);
+    expect(called).toBe(true);
+  });
+
+  it('asteroid.createRandom retries when too close to avoidPos', () => {
+    const arena = { width: 1200, height: 800 };
+    const ast = Asteroid.createRandom(arena, { x: 0, y: 0 }, () => 0);
+    expect(ast).toBeInstanceOf(Asteroid);
   });
 });
