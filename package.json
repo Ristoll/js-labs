@@ -13,7 +13,7 @@
     "dev:server": "npm run dev --workspace=server",
     "build": "npm run build --workspace=client",
     "start": "npm run start --workspace=server",
-    "test": "npm run test --workspace=server",
+    "test": "vitest run",
     "test:client": "node scripts/test-m1.js",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -23,10 +23,14 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
+    "@vitest/coverage-c8": "^0.33.0",
+    "@vitest/coverage-v8": "^5.1.2",
     "eslint": "^10.11.0",
+    "fast-check": "^4.11.0",
     "prettier": "^3.9.9",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^5.1.2"
   },
   "dependencies": {
     "ws": "^8.22.1",
