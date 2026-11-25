@@ -105,3 +105,5 @@
 {"type":"room_closed","timestamp":1795638572135,"data":{"roomId":"gamma"}}
 {"type":"room_created","timestamp":1795638572137,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
 {"type":"room_closed","timestamp":1795638572198,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795642763805,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795642923502,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
