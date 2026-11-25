@@ -1,0 +1,36 @@
+{"type":"room_created","timestamp":1795632592996,"data":{"roomId":"sector-binary","name":"Sector sector-binary","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795632592996,"data":{"playerId":"player-mwwha82s-99wk","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795632593039,"data":{"playerId":"player-mwwha82s-99wk","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795632593039,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795634208165,"data":{"roomId":"sector-binary","name":"Sector sector-binary","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795634208166,"data":{"playerId":"player-mwwi8ucl-u06l","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795634208250,"data":{"playerId":"player-mwwi8ucl-u06l","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795634208250,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795634431252,"data":{"roomId":"sector-binary","name":"Sector sector-binary","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795634431253,"data":{"playerId":"player-mwwidmhh-447q","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795634431304,"data":{"playerId":"player-mwwidmhh-447q","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795634431304,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795635675370,"data":{"roomId":"sector-binary","name":"Sector sector-binary","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795635675370,"data":{"playerId":"player-mwwj4aga-68t2","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795635675424,"data":{"playerId":"player-mwwj4aga-68t2","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795635675425,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795638025919,"data":{"roomId":"sector-binary","name":"BinaryPilot","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638025919,"data":{"playerId":"player-mwwkio5b-gags","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795638025965,"data":{"playerId":"player-mwwkio5b-gags","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795638025965,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795638144647,"data":{"roomId":"sector-binary","name":"BinaryPilot","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638144648,"data":{"playerId":"player-mwwkl7rb-0lg6","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795638144686,"data":{"playerId":"player-mwwkl7rb-0lg6","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795638144686,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795638400607,"data":{"roomId":"sector-binary","name":"BinaryPilot","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638400607,"data":{"playerId":"player-mwwkqp9b-ti9x","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795638400659,"data":{"playerId":"player-mwwkqp9b-ti9x","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795638400659,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795638532838,"data":{"roomId":"sector-binary","name":"BinaryPilot","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638532838,"data":{"playerId":"player-mwwktjae-ojiq","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795638532893,"data":{"playerId":"player-mwwktjae-ojiq","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795638532894,"data":{"roomId":"sector-binary"}}
+{"type":"room_created","timestamp":1795638571939,"data":{"roomId":"sector-binary","name":"BinaryPilot","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638571940,"data":{"playerId":"player-mwwkudgj-h8n9","name":"BinaryPilot"}}
+{"type":"player_left","timestamp":1795638571982,"data":{"playerId":"player-mwwkudgj-h8n9","name":"BinaryPilot","reason":""}}
+{"type":"room_closed","timestamp":1795638571982,"data":{"roomId":"sector-binary"}}
