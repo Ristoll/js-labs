@@ -4,20 +4,23 @@
 
 declare const EntityIdBrand: unique symbol;
 export type EntityId = number & { readonly [EntityIdBrand]: true };
-export function asEntityId(n: number): EntityId {
-  return n as EntityId;
-}
-
 declare const TickBrand: unique symbol;
 export type Tick = number & { readonly [TickBrand]: true };
-export function asTick(n: number): Tick {
-  return n as Tick;
-}
-
 declare const SeqBrand: unique symbol;
 export type Seq = number & { readonly [SeqBrand]: true };
+
+/** Single justified cast: branded-type constructor. */
+function brand<T>(n: number): T {
+  return n as T; // branded-type constructor (EntityId / Tick / Seq)
+}
+export function asEntityId(n: number): EntityId {
+  return brand<EntityId>(n);
+}
+export function asTick(n: number): Tick {
+  return brand<Tick>(n);
+}
 export function asSeq(n: number): Seq {
-  return n as Seq;
+  return brand<Seq>(n);
 }
 
 export type ShipSnapshot = {
@@ -48,7 +51,7 @@ export type BulletSnapshot = {
   alive: boolean;
   ttl: number;
   damage: number;
-  ownerId: string | null;
+  ownerId: string | number | null;
 };
 
 export type AsteroidSnapshot = {
@@ -98,3 +101,10 @@ export type Arena = {
   readonly halfWidth: number;
   readonly halfHeight: number;
 };
+
+/** Exhaustiveness guard: any switch that reaches this is a compile-time error. */
+export function assertNever(x: never): never {
+  throw new Error(`Unexpected object: ${String(x)}`);
+}
+
+

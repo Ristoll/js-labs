@@ -1,6 +1,6 @@
-import { Entity, type EntityOptions } from './entity.js';
-import { Vector2 } from './vector.js';
-import type { AsteroidSnapshot } from '../types.js';
+import { Entity, type EntityOptions } from './entity.ts';
+import { Vector2 } from './vector.ts';
+import type { AsteroidSnapshot } from '../types.ts';
 
 export interface Vertex {
   readonly x: number;
@@ -163,3 +163,5 @@ export class Asteroid extends Entity {
     });
   }
 }
+
+

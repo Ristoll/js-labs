@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
-import { createServer } from '../src/server.js';
-import { TokenBucket } from '../src/rate-limiter.js';
-import { MatchLogTransform, NDJSONParserTransform } from '../src/streams.js';
-import { createReplayGenerator } from '../src/replay.js';
-import { loadConfig } from '../src/config.js';
-import { validateMessage, WS_CLOSE_CODES } from '../src/protocol.js';
-import { Room } from '../src/room.js';
+import { createServer } from '../src/server.ts';
+import { TokenBucket } from '../src/rate-limiter.ts';
+import { MatchLogTransform, NDJSONParserTransform } from '../src/streams.ts';
+import { createReplayGenerator } from '../src/replay.ts';
+import { loadConfig } from '../src/config.ts';
+import { validateMessage, WS_CLOSE_CODES } from '../src/protocol.ts';
+import { Room } from '../src/room.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const testReplaysDir = path.join(__dirname, 'temp-replays');
@@ -575,3 +575,4 @@ describe('Lab 04 Server & WebSocket Test Suite', () => {
     });
   });
 });
+

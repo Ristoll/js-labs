@@ -13,3 +13,4 @@ export function createMulberry32(seed: number = 12345): PRNG {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+

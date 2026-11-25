@@ -1,5 +1,5 @@
-import { Entity, type EntityOptions } from './entity.js';
-import type { BulletSnapshot } from '../types.js';
+import { Entity, type EntityOptions } from './entity.ts';
+import type { BulletSnapshot } from '../types.ts';
 
 export interface BulletOptions extends EntityOptions {
   ttl?: number;
@@ -8,7 +8,7 @@ export interface BulletOptions extends EntityOptions {
     update: (bullet: Bullet, dt: number, world: unknown) => void;
     clone: () => BulletOptions['homing'];
   } | null;
-  ownerId?: string | null;
+  ownerId?: string | number | null;
 }
 
 export class Bullet extends Entity {
@@ -19,7 +19,7 @@ export class Bullet extends Entity {
     update: (bullet: Bullet, dt: number, world: unknown) => void;
     clone: () => BulletOptions['homing'];
   } | null;
-  ownerId: string | null;
+  ownerId: string | number | null;
 
   constructor({
     id = null,
@@ -120,3 +120,5 @@ export class Bullet extends Entity {
     });
   }
 }
+
+

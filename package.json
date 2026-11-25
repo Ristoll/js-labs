@@ -17,7 +17,8 @@
     "test:client": "node scripts/test-m1.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check": "eslint . && prettier --check ."
+    "check": "eslint . && prettier --check .",
+    "typecheck": "tsc --noEmit -p ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -28,6 +29,7 @@
     "vite": "^8.2.2"
   },
   "dependencies": {
-    "ws": "^8.22.1"
+    "ws": "^8.22.1",
+    "zod": "^4.6.7"
   }
 }

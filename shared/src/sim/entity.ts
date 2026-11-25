@@ -1,5 +1,5 @@
-import { Vector2 } from './vector.js';
-import { asEntityId, type EntityId } from '../types.js';
+import { Vector2 } from './vector.ts';
+import { asEntityId, type EntityId } from '../types.ts';
 
 export interface EntityOptions {
   id?: number | EntityId | null;
@@ -27,6 +27,7 @@ export class Entity {
   radius: number;
   alive: boolean;
   kind: string;
+  playerId?: string | null;
 
   static resetNextId(start = 1): void {
     Entity.#nextId = start;
@@ -138,3 +139,6 @@ export class Entity {
     });
   }
 }
+
+
+

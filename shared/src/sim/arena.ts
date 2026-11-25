@@ -1,7 +1,7 @@
 /**
  * Arena boundary definitions and toroidal wrap-around.
  */
-import type { Arena } from '../types.js';
+import type { Arena } from '../types.ts';
 
 export function createArena(width = 1200, height = 800): Arena {
   return {
@@ -36,3 +36,5 @@ export function wrapAround<T extends WrapTarget>(
   entity.y = y;
   return entity;
 }
+
+

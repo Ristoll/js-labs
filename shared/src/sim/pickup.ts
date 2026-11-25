@@ -1,6 +1,7 @@
-import { Entity, type EntityOptions } from './entity.js';
-import { Vector2 } from './vector.js';
-import type { PickupSnapshot } from '../types.js';
+import { Entity, type EntityOptions } from './entity.ts';
+import { Vector2 } from './vector.ts';
+import type { PickupSnapshot } from '../types.ts';
+import type { Ship } from './ship.ts';
 
 export const PICKUP_TYPES = {
   SHIELD: 'shield',
@@ -13,7 +14,7 @@ export interface PickupEffect {
   readonly name: string;
   readonly color: string;
   readonly duration?: number;
-  apply: (ship: any) => void;
+  apply: (ship: Ship) => void;
 }
 
 export interface PickupOptions extends EntityOptions {
@@ -61,7 +62,7 @@ export class Pickup extends Entity {
         ? {
             name: 'Shield Repair',
             color: '#4ade80',
-            apply(ship: { heal?: (amount: number) => void }) {
+            apply(ship: Ship) {
               if (typeof ship.heal === 'function') {
                 ship.heal(3);
               }
@@ -71,7 +72,7 @@ export class Pickup extends Entity {
             name: 'Rapid Fire',
             color: '#facc15',
             duration: 8.0,
-            apply(ship: { rapidFireTimer?: number }) {
+            apply(ship: Ship) {
               ship.rapidFireTimer = 8.0;
             },
           });
@@ -83,7 +84,7 @@ export class Pickup extends Entity {
     super.update(dt);
   }
 
-  applyTo(ship: unknown): void {
+  applyTo(ship: Ship): void {
     if (this.effect && typeof this.effect.apply === 'function') {
       this.effect.apply(ship);
     }
@@ -152,3 +153,5 @@ export class Pickup extends Entity {
     });
   }
 }
+
+

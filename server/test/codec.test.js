@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
 import { BinaryCodec, JsonCodec, BINARY_MSG_TYPE } from 'shared/codec';
 import { PROTOCOL_VERSION } from 'shared/protocol';
-import { createServer } from '../src/server.js';
+import { createServer } from '../src/server.ts';
 
 test('BinaryCodec Input round-trip preserves fields within quantization tolerance', () => {
   const originalInput = {
