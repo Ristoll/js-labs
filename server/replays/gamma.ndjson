@@ -15,3 +15,93 @@
 {"type":"room_created","timestamp":1794920036294,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
 {"type":"room_created","timestamp":1794920232452,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
 {"type":"room_created","timestamp":1794920728655,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795632592966,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795632592967,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795632593005,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795632593042,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795632593120,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795632593131,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795632593140,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795632593180,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795632593183,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795632593240,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634208126,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795634208117,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634208252,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634208198,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634208328,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634208343,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634208389,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634208394,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634208406,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795634208462,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634431203,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795634431262,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634431306,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634431320,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634431422,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634431435,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634431449,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795634431477,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795634431481,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795634431551,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795635675337,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795635675370,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795635675387,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795635675427,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795635675500,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795635675535,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795635675543,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795635675594,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795635675596,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795635675656,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638025893,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638025891,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638025940,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638025966,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638026044,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638026048,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638026057,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638026106,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638026109,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638026181,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638144617,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638144641,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638144688,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638144668,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638144780,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638144802,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638144812,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638144855,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638144858,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638144916,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638400566,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638400574,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638400622,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638400661,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638400726,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638400738,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638400734,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638400781,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638400784,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638400843,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638532798,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638532811,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638532895,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638532870,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638532981,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638532992,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638533004,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638533031,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638533036,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638533105,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638571911,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_created","timestamp":1795638571904,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638571984,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638571960,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638572077,"data":{"roomId":"gamma"}}
+{"type":"room_closed","timestamp":1795638572086,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638572097,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638572135,"data":{"roomId":"gamma"}}
+{"type":"room_created","timestamp":1795638572137,"data":{"roomId":"gamma","name":"Gamma Rift","maxPlayers":2}}
+{"type":"room_closed","timestamp":1795638572198,"data":{"roomId":"gamma"}}

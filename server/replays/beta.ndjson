@@ -15,3 +15,93 @@
 {"type":"room_created","timestamp":1794920036294,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
 {"type":"room_created","timestamp":1794920232451,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
 {"type":"room_created","timestamp":1794920728655,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795632592966,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795632592967,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795632593004,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795632593042,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795632593119,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795632593130,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795632593139,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795632593180,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795632593182,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795632593240,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634208125,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795634208116,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634208252,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634208197,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634208328,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634208342,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634208389,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634208394,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634208406,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795634208462,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634431202,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795634431261,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431306,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634431319,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431422,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634431435,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431449,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795634431476,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795634431481,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431551,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795635675336,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795635675369,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795635675386,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795635675427,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795635675500,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795635675535,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795635675543,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795635675594,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795635675596,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795635675656,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638025892,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638025890,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638025939,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638025966,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638026044,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638026048,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638026056,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638026106,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638026108,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638026181,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638144616,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638144640,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638144688,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638144667,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638144780,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638144802,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638144811,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638144855,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638144857,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638144916,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638400566,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638400573,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638400622,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638400661,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638400726,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638400738,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638400734,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638400781,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638400783,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638400843,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638532797,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638532810,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638532895,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638532869,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638532981,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638532992,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638533004,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638533031,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638533035,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638533105,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638571910,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638571903,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638571984,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638571959,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638572077,"data":{"roomId":"beta"}}
+{"type":"room_closed","timestamp":1795638572086,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638572097,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638572135,"data":{"roomId":"beta"}}
+{"type":"room_created","timestamp":1795638572137,"data":{"roomId":"beta","name":"Beta Nebula","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638572198,"data":{"roomId":"beta"}}

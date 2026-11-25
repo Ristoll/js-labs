@@ -1,7 +1,7 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
-import { createServer } from '../src/server.js';
+import { createServer } from '../src/server.ts';
 
 describe('Lab 04 M2 Two Clients Live Verification', () => {
   let app;

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
-import { createServer } from '../src/server.js';
+import { createServer } from '../src/server.ts';
 
 test('Match runs at 30 Hz and exposes stats via /api/stats', async () => {
   const { server, shutdown } = createServer({
