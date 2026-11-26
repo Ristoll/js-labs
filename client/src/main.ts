@@ -18,13 +18,6 @@ import { Lobby } from './lobby/lobby.ts';
 import { setupLobbyUI } from './lobby/lobby-ui.ts';
 import { GameSocket } from './net/socket.ts';
 import { NetgraphUI } from './net/netgraph.ts';
-import {
-  toggleExperiment1,
-  toggleExperiment2,
-  toggleExperiment3,
-  runExperiment3Measurement,
-  setupM1ExperimentUI,
-} from './experiments.ts';
 
 // 1. Setup Canvas and Viewport
 const canvasElement = document.getElementById('game-canvas');
@@ -90,14 +83,7 @@ let myPlayerId = null;
 let inputSeq = 1;
 let pendingInputs = [];
 let netgraph = null;
-let breakDeterminismActive = false;
 const snapshotBuffer = new SnapshotBuffer(66.67);
-
-window.breakDeterminism = (active) => {
-  breakDeterminismActive = typeof active === 'boolean' ? active : !breakDeterminismActive;
-  console.log(`[Netcode] Determinism break active: ${breakDeterminismActive}`);
-  return breakDeterminismActive;
-};
 
 // --- DEMONSTRATION OF THE `this` BUG (Section 2) ---
 // Naive bug:
@@ -114,69 +100,6 @@ canvasElement.addEventListener('pointerdown', () => {
 });
 // Alternative Solution 2: canvasElement.addEventListener('pointerdown', ship.fire.bind(ship, world));
 // Alternative Solution 3: defining `fire = (world) => { ... }` as an instance arrow field on Ship.
-
-// Experiment 3 Live Measurement Flight Controls
-let testThrustActive = false;
-let testUnwrappedX = 0;
-let testPhysicsSteps = 0;
-let testSimTime = 0;
-let testTargetSteps = Infinity;
-let testTargetSimTime = Infinity;
-
-const testControls = {
-  startTest({ targetSteps = Infinity, targetSimTime = Infinity } = {}) {
-    // Isolate ship for pure 1D trajectory benchmarking
-    world.clear();
-    score = 0;
-    respawnTimer = 0;
-
-    // Reset to pristine identical starting state
-    ship = new Ship({
-      x: 80,
-      y: arena.height / 2,
-      vx: 0,
-      vy: 0,
-      angle: 0, // Pointing strictly +X for clean 1D trajectory measurement
-      thrust: true,
-      reverse: false,
-    });
-    world.spawn(ship);
-    previousWorld = world.clone();
-
-    // Reset metric accumulators
-    testUnwrappedX = 0;
-    testPhysicsSteps = 0;
-    testSimTime = 0;
-    testTargetSteps = targetSteps;
-    testTargetSimTime = targetSimTime;
-    testThrustActive = true;
-  },
-
-  stopTest() {
-    testThrustActive = false;
-    testTargetSteps = Infinity;
-    testTargetSimTime = Infinity;
-    if (ship) {
-      ship.thrust = false;
-    }
-    // Re-populate asteroids and pickup for normal sandbox play
-    if ([...world.ofKind('asteroid')].length === 0) {
-      populateAsteroids(5);
-    }
-    if ([...world.ofKind('pickup')].length === 0) {
-      world.spawn(Pickup.createRandom(arena));
-    }
-  },
-
-  getShipData() {
-    return {
-      ship,
-      unwrappedX: testUnwrappedX,
-      physicsSteps: testPhysicsSteps,
-      simTime: testSimTime,
-    };
-  },
-};
 
 // 4. Fixed-Timestep Game Loop (Decoupled Physics & Rendering)
 const loop = createLoop({
@@ -221,12 +144,6 @@ const loop = createLoop({
       // --- M2: Client-Side Prediction ---
       // Apply input to own ship immediately with shared integrate()
       integrate(ship, inputPacket, dt);
-
-      // Determinism-break experiment: inject non-deterministic drift if active
-      if (breakDeterminismActive) {
-        ship.x += (Math.random() - 0.5) * 8;
-        ship.y += (Math.random() - 0.5) * 8;
-      }
 
       wrapAround(ship, arena);
 
@@ -316,31 +233,22 @@ const loop = createLoop({
       }
     }
 
-    const shouldTestThrust =
-      testThrustActive && testPhysicsSteps < testTargetSteps && testSimTime < testTargetSimTime;
-
-    // During automated live testing, inject dedicated forward thrust
-    const activeInput = shouldTestThrust
-      ? { isDown: (code) => code === 'ArrowUp' || code === 'KeyW' }
-      : input;
-
     // Firing logic:
     // - Space or KeyF fires standard high-velocity blaster
     // - KeyE fires homing missile (composition-based HomingComponent)
-    if (ship.alive && !shouldTestThrust) {
-      if (activeInput.isDown('KeyE')) {
+    if (ship.alive) {
+      if (input.isDown('KeyE')) {
         ship.fire(world, true);
-      } else if (activeInput.isDown('Space') || activeInput.isDown('KeyF')) {
+      } else if (input.isDown('Space') || input.isDown('KeyF')) {
         ship.fire(world, false);
       }
     }
 
     // Advance simulation of all entities (ship, bullets, asteroids, explosions) & wrap boundaries
-    world.step(dt, activeInput, arena);
+    world.step(dt, input, arena);
 
     // Collision detection and resolution (swappable modular system)
-    if (!shouldTestThrust) {
-      const collisions = findCollisions(world);
+    const collisions = findCollisions(world);
       resolveCollisions(world, collisions, (event) => {
         if (event.type === 'asteroid-destroyed') {
           score += event.score;
@@ -404,13 +312,6 @@ const loop = createLoop({
           );
         }
       });
-    }
-
-    if (shouldTestThrust) {
-      testUnwrappedX += ship.vx * dt;
-      testPhysicsSteps++;
-      testSimTime += dt;
-    }
   },
 
   render(alpha, stats) {
@@ -641,35 +542,3 @@ function initMultiplayer({ room, playerName }) {
 }
 
 initGame();
-
-// Milestone 4 Experiments (Results printed in Console)
-const btn1 = document.getElementById('btn-exp-1');
-const btn2 = document.getElementById('btn-exp-2');
-const btn3 = document.getElementById('btn-exp-3');
-const btn3Base = document.getElementById('btn-exp-3-base');
-const btn3Throt = document.getElementById('btn-exp-3-throttle');
-
-btn1?.addEventListener('click', () => toggleExperiment1(loop, btn1));
-btn2?.addEventListener('click', () => toggleExperiment2(loop, btn2));
-btn3?.addEventListener('click', () => toggleExperiment3(loop, btn3));
-
-btn3Base?.addEventListener('click', () =>
-  runExperiment3Measurement({
-    loop,
-    buttonElement: btn3Base,
-    isThrottled: false,
-    testControls,
-  })
-);
-
-btn3Throt?.addEventListener('click', () =>
-  runExperiment3Measurement({
-    loop,
-    buttonElement: btn3Throt,
-    isThrottled: true,
-    testControls,
-  })
-);
-
-// Lab 03 — Milestone 1 Experiment Panel
-setupM1ExperimentUI();
