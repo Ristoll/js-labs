@@ -1,0 +1,23 @@
+name: Uptime Monitor
+
+on:
+  schedule:
+    # Hit /health every 5 minutes.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Health check
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${HEALTH_URL}/health" || echo "000")
+          echo "health_status=$STATUS" >> $GITHUB_OUTPUT
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Health check failed with HTTP $STATUS"
+            exit 1
+          fi
+          echo "/health is healthy"
+        env:
+          HEALTH_URL: ${{ secrets.HEALTH_URL }}

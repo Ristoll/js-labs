@@ -5,10 +5,18 @@ import { parseClientMessage, WS_CLOSE_CODES } from './protocol.ts';
 import { BinaryCodec } from 'shared/codec';
 import type { RoomManager } from './room-manager.ts';
 import type { ServerConfig } from './config.ts';
-import type { Server } from 'node:http';
+import type { Server, IncomingMessage } from 'node:http';
 import type { Room } from './room.ts';
+import { log, bindLogger } from './logger.ts';
+import {
+  incMessages,
+  addBytes,
+  incRejection,
+  setPlayers,
+} from './metrics.ts';
 
 interface WsState {
+  ip: string;
   isAlive: boolean;
   missedPings: number;
   playerId: string | null;
@@ -37,15 +45,70 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
   // Per-connection state (kept off the WebSocket object to avoid type augmentation).
   const wsState = new Map<WebSocket, WsState>();
 
+  // Per-IP connection counting for the per-IP cap (MAX_CONNECTIONS_PER_IP).
+  // 0 = unlimited. Keyed by the client's remote address.
+  const connectionsByIp = new Map<string, number>();
+
+  function clientIp(req: IncomingMessage): string {
+    return (req.socket?.remoteAddress ?? 'unknown').toString();
+  }
+
+  function ipAllowed(ip: string): boolean {
+    const cap = config.maxConnectionsPerIp;
+    if (cap <= 0) return true;
+    const count = connectionsByIp.get(ip) ?? 0;
+    return count < cap;
+  }
+
+  function incIp(ip: string) {
+    connectionsByIp.set(ip, (connectionsByIp.get(ip) ?? 0) + 1);
+  }
+
+  function decIp(ip: string) {
+    const count = (connectionsByIp.get(ip) ?? 1) - 1;
+    if (count <= 0) {
+      connectionsByIp.delete(ip);
+    } else {
+      connectionsByIp.set(ip, count);
+    }
+  }
+
+  function originAllowed(origin: string | undefined | string[]): boolean {
+    const allowed = config.allowedOrigins;
+    if (allowed.includes('*')) return true;
+    const origins = Array.isArray(origin) ? origin : origin ? [origin] : [];
+    return origins.some((o) => allowed.includes(o));
+  }
+
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url ?? '', `http://${req.headers.host ? (Array.isArray(req.headers.host) ? req.headers.host[0] : req.headers.host) : 'localhost'}`);
-    if (url.pathname === '/ws') {
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        wss.emit('connection', ws, req);
-      });
-    } else {
+    const ip = clientIp(req);
+
+    if (url.pathname !== '/ws') {
       socket.destroy();
+      return;
     }
+
+    // Origin verification (WebSocket equivalent of CORS).
+    if (!originAllowed(req.headers.origin)) {
+      log.warn({ ip, origin: req.headers.origin, event: 'ws-rejected' }, 'WebSocket rejected: origin not allowed');
+      incRejection('origin');
+      socket.destroy();
+      return;
+    }
+
+    // Per-IP connection cap.
+    if (!ipAllowed(ip)) {
+      log.warn({ ip, event: 'ws-rejected' }, 'WebSocket rejected: per-IP connection cap');
+      incRejection('ip_cap');
+      socket.destroy();
+      return;
+    }
+
+    incIp(ip);
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
   });
 
   const heartbeatTimer = setInterval(() => {
@@ -54,9 +117,10 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
       if (!state) continue;
       if (state.isAlive === false) {
         state.missedPings += 1;
-        if (state.missedPings >= config.heartbeatMaxMissed) {
-          console.log(`[WS] Terminating inactive client (${state.playerId ?? 'unauthenticated'})`);
-          ws.terminate();
+          if (state.missedPings >= config.heartbeatMaxMissed) {
+            const logger = bindLogger(log, { playerId: state.playerId ?? null });
+            logger.warn({ event: 'ws-terminate', reason: 'inactive' }, 'Terminating inactive client');
+            ws.terminate();
           continue;
         }
       } else {
@@ -77,7 +141,9 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
   });
 
   wss.on('connection', (ws, req) => {
+    const ip = (req.socket?.remoteAddress ?? 'unknown').toString();
     const state: WsState = {
+      ip,
       isAlive: true,
       missedPings: 0,
       playerId: null,
@@ -94,7 +160,8 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
 
     const joinTimeout = setTimeout(() => {
       if (!state.joinedRoom) {
-        console.warn('[WS] Client failed to join room within timeout, closing connection.');
+        const logger = bindLogger(log, { playerId: state.playerId ?? null });
+        logger.warn({ event: 'ws-rejection', reason: 'join_timeout' }, 'Client failed to join room within timeout, closing connection.');
         ws.send(
           JSON.stringify({
             v: 1,
@@ -113,6 +180,9 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
         return;
       }
       if (!s.rateLimiter.tryConsume(1)) {
+        const logger = bindLogger(log, { roomId: s.joinedRoom?.id ?? null, playerId: s.playerId ?? null });
+        logger.warn({ event: 'ws-rejection', reason: 'rate_limit' }, 'Rate limit exceeded');
+        incRejection('rate_limit');
         ws.send(
           JSON.stringify({
             v: 1,
@@ -123,6 +193,10 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
         ws.close(WS_CLOSE_CODES.POLICY_VIOLATION, 'Rate limit exceeded');
         return;
       }
+
+      const byteLength = typeof data === 'string' ? Buffer.byteLength(data) : (data.byteLength ?? 0);
+      addBytes('in', byteLength);
+      incMessages('in');
 
       let message: unknown;
       try {
@@ -141,7 +215,9 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
           }
         }
       } catch {
-        console.warn('[WS] Malformed JSON rejected from socket');
+        const logger = bindLogger(log, { roomId: s.joinedRoom?.id ?? null, playerId: s.playerId ?? null });
+        logger.warn({ event: 'ws-rejection', reason: 'invalid_payload' }, 'Malformed JSON rejected from socket');
+        incRejection('invalid_payload');
         ws.send(
           JSON.stringify({
             v: 1,
@@ -155,7 +231,9 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
 
       const parsed = parseClientMessage(message);
       if (!parsed.ok) {
-        console.warn(`[WS] Invalid message rejected: ${parsed.error}`);
+        const logger = bindLogger(log, { roomId: s.joinedRoom?.id ?? null, playerId: s.playerId ?? null });
+        logger.warn({ event: 'ws-rejection', reason: 'protocol_error', error: parsed.error }, 'Invalid message rejected');
+        incRejection('protocol_error');
         ws.send(
           JSON.stringify({
             v: 1,
@@ -166,6 +244,8 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
         ws.close(parsed.code ?? WS_CLOSE_CODES.PROTOCOL_ERROR, parsed.error);
         return;
       }
+
+      const logger = bindLogger(log, { roomId: s.joinedRoom?.id ?? null, playerId: s.playerId ?? null });
 
       try {
         switch (parsed.value.type) {
@@ -195,7 +275,8 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
         }
       } catch (err) {
         const closeCode = (err as { code?: number })?.code ?? WS_CLOSE_CODES.PROTOCOL_ERROR;
-        console.error(`[WS] Error dispatching ${parsed.value.type}:`, err instanceof Error ? err.message : String(err));
+        logger.error({ event: 'ws-dispatch-error', type: parsed.value.type, err: err instanceof Error ? err.message : String(err) }, 'Error dispatching message');
+        incRejection('dispatch_error');
         ws.send(
           JSON.stringify({
             v: 1,
@@ -209,6 +290,7 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
 
     ws.on('close', (code, reason) => {
       clearTimeout(joinTimeout);
+      decIp(state.ip);
       handleLeave(ws, state, reason ? reason.toString() : 'closed');
     });
 
@@ -259,6 +341,8 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
     };
 
     room.addPlayer(player);
+
+    setPlayers(wss.clients.size);
 
     s.joinedRoom = room;
     s.playerId = playerId;
@@ -332,6 +416,7 @@ export function setupWebSocket(server: Server, roomManager: RoomManager, config:
       state.joinedRoom = null;
       state.playerId = null;
     }
+    setPlayers(wss.clients.size);
   }
 
   return wss;

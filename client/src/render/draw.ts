@@ -725,13 +725,14 @@ export function drawHud(ctx, stats) {
     respawnTimer = 0,
     shipAlive = true,
     rapidFireTimer = 0,
+    version = null,
   } = stats || {};
 
   ctx.save();
   const hudX = 16;
   const hudY = 16;
   const boxWidth = 228;
-  const boxHeight = rapidFireTimer > 0 ? 224 : 206;
+  const boxHeight = rapidFireTimer > 0 ? 241 + versionLine : 206 + versionLine;
 
   // Background panel
   ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
@@ -743,7 +744,7 @@ export function drawHud(ctx, stats) {
   // HUD Header
   ctx.font = '600 11px ui-monospace, Consolas, monospace';
   ctx.fillStyle = '#94a3b8';
-  ctx.fillText('DOGFIGHT // TELEMETRY', hudX + 12, hudY + 20);
+  ctx.fillText(`DOGFIGHT // TELEMETRY ${version ? `v${version}` : ''}`, hudX + 12, hudY + 20);
 
   // Subtle header divider
   ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
@@ -768,7 +769,8 @@ export function drawHud(ctx, stats) {
     { label: 'mode: ', val: mode, col: '#38bdf8' },
     { label: 'score:', val: `${score}`, col: '#facc15' },
     { label: 'hull: ', val: hullDisplay, col: hullColor },
-  ];
+    version ? { label: 'ver:  ', val: `${version}`, col: '#94a3b8' } : null,
+  ].filter(Boolean);
 
   if (rapidFireTimer > 0) {
     rows.push({
