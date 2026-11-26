@@ -13,7 +13,7 @@ import { setupCanvas } from './render/canvas.ts';
 import { drawBackground, drawWorld, drawHud } from './render/draw.ts';
 import { loadAll } from './assets/loader.ts';
 import { drawLoadingScreen } from './render/loading.ts';
-import { setupAudio, getSharedAudioContext } from './audio.ts';
+import { setupAudio, } from './audio.ts';
 import { Lobby } from './lobby/lobby.ts';
 import { setupLobbyUI } from './lobby/lobby-ui.ts';
 import { GameSocket } from './net/socket.ts';
