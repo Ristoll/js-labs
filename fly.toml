@@ -1,12 +1,13 @@
-# fly.toml app configuration file generated for js-labs-ejfgag on 2026-11-26T12:12:35Z
-#
-# See https://docs.fly.io/reference/configuration for information about how to use this file.
-#
 
 app = 'js-labs-ejfgag'
 primary_region = 'iad'
 
 [build]
+
+[env]
+  PORT = "8080"
+  HOST = "0.0.0.0"
+
 [http_service]
   internal_port = 8080
   force_https = true
