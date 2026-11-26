@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+*.env
+*.env.local
+
+# Server dynamic artifacts / benchmarks temp data
+server/replays/synth-*.ndjson
+*.csv.tmp
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dogfight — Multiplayer Space Arena</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/assets/sprites/ship.png" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+
+    <!-- M3 — Lobby Screen (shown after asset load, before game start) -->
+    <div id="lobby-screen" class="hidden">
+      <div class="lobby-card">
+        <div class="lobby-header">
+          <span class="lobby-badge">LAB 04 // MULTIPLAYER</span>
+          <h1 class="lobby-title">DOGFIGHT</h1>
+          <p class="lobby-subtitle">Select a room and enter your pilot name to join.</p>
+        </div>
+
+        <div class="lobby-name-row">
+          <label for="lobby-player-name" class="lobby-label">Pilot name</label>
+          <input
+            id="lobby-player-name"
+            class="lobby-input"
+            type="text"
+            maxlength="24"
+            placeholder="Pilot"
+            value="Pilot"
+          />
+          <span id="lobby-refresh-indicator" class="lobby-refresh-dot" title="Refreshing…"></span>
+        </div>
+
+        <div id="lobby-error" class="lobby-error hidden"></div>
+
+        <ul id="lobby-room-list" class="lobby-room-list">
+          <li class="lobby-empty">Loading rooms…</li>
+        </ul>
+
+        <p class="lobby-footer-hint">Rooms refresh every 5 s · Leaving cancels in-flight request</p>
+      </div>
+    </div>
+
+    <!-- Multiplayer In-Game HUD: Roster & Chat Overlay -->
+    <div id="multiplayer-hud" class="hidden">
+      <div id="roster-panel">
+        <div class="hud-panel-title">PILOTS IN SECTOR</div>
+        <ul id="roster-list"></ul>
+      </div>
+      <div id="chat-panel">
+        <div id="chat-messages"></div>
+        <form id="chat-form">
+          <input
+            id="chat-input"
+            type="text"
+            aria-label="Chat message"
+            placeholder="Type a message (Enter)..."
+            maxlength="200"
+            autocomplete="off"
+          />
+        </form>
+      </div>
+    </div>
+
+    <!-- Lab 05 Netgraph & Latency Injector Overlay -->
+    <div id="netgraph-overlay" class="netgraph hidden">
+      <div class="netgraph-header">
+        <span class="netgraph-title">NETGRAPH // LAB 05</span>
+        <button id="btn-toggle-netgraph" class="netgraph-minimize" title="Minimize / Expand">
+          _
+        </button>
+      </div>
+      <div class="netgraph-body" id="netgraph-body">
+        <div class="netgraph-row">
+          <span class="net-lbl">RTT:</span><span id="net-rtt" class="net-val">0 ms</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Server Tick:</span
+          ><span id="net-tick" class="net-val">#0 (30 Hz)</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Snap Age:</span><span id="net-snap-age" class="net-val">0 ms</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Bandwidth:</span
+          ><span id="net-bandwidth" class="net-val">↓ 0.0 KB/s | ↑ 0.0 KB/s</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Pending Inputs:</span
+          ><span id="net-pending" class="net-val">0</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Reconciliation:</span
+          ><span id="net-correction" class="net-val">0.0 px</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Interp Delay:</span
+          ><span id="net-interp" class="net-val">66 ms (Interp)</span>
+        </div>
+        <div class="netgraph-row">
+          <span class="net-lbl">Codec:</span
+          ><span id="net-codec" class="net-val">BINARY (DataView)</span>
+        </div>
+
+        <div class="netgraph-controls">
+          <div class="netgraph-ctrl-title">LATENCY INJECTOR</div>
+          <div class="netgraph-btn-group">
+            <button class="net-btn" data-delay="0" data-jitter="0" data-drop="0">0 ms</button>
+            <button class="net-btn" data-delay="50" data-jitter="10" data-drop="0">50 ms</button>
+            <button class="net-btn active" data-delay="100" data-jitter="0" data-drop="0">
+              100 ms (M1)
+            </button>
+            <button class="net-btn" data-delay="150" data-jitter="30" data-drop="0.02">
+              150ms+Jitter
+            </button>
+            <button
+              id="btn-toggle-codec"
+              class="net-btn net-btn-toggle active"
+              style="grid-column: span 2"
+            >
+              Codec: BINARY
+            </button>
+            <button
+              id="btn-toggle-determinism"
+              class="net-btn net-btn-toggle"
+              style="grid-column: span 2"
+            >
+              Break Determinism: OFF
+            </button>
+          </div>
+          <div class="netgraph-sliders">
+            <label class="net-slider-label"
+              >Delay: <span id="val-delay">100</span>ms
+              <input type="range" id="slider-delay" min="0" max="400" step="10" value="100"
+            /></label>
+            <label class="net-slider-label"
+              >Jitter: <span id="val-jitter">0</span>ms
+              <input type="range" id="slider-jitter" min="0" max="100" step="5" value="0"
+            /></label>
+            <label class="net-slider-label"
+              >Drop: <span id="val-drop">0</span>%
+              <input type="range" id="slider-drop" min="0" max="20" step="1" value="0"
+            /></label>
+            <label class="net-slider-label"
+              >Interp Delay: <span id="val-interp">66</span>ms
+              <input type="range" id="slider-interp" min="10" max="250" step="5" value="66"
+            /></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="controls-hint">
+      <kbd>W</kbd>/<kbd>▲</kbd> Forward &bull; <kbd>S</kbd>/<kbd>▼</kbd> Reverse &bull;
+      <kbd>A</kbd>/<kbd>D</kbd>/<kbd>◄</kbd>/<kbd>►</kbd> Turn &bull; <kbd>Space</kbd> Fire &bull;
+      <kbd>E</kbd> Homing
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

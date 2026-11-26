@@ -1,0 +1,215 @@
+{"type":"room_created","timestamp":1793808894031,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1793808933430,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1793809077736,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1793809251056,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1793809320996,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1793809449332,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794917161514,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794917358152,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794917421158,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794918334601,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794918396893,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794918435578,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794919893296,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794919939581,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794920036293,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794920232450,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1794920728654,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795632592964,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795632592965,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795632593003,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795632593041,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795632593119,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795632593130,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795632593139,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795632593152,"data":{"playerId":"player-mwwha874-7106","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795632593179,"data":{"playerId":"player-mwwha874-7106","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795632593180,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795632593182,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795632593187,"data":{"playerId":"player-mwwha883-5sgj","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795632593239,"data":{"playerId":"player-mwwha883-5sgj","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795632593239,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634208120,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795634208114,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634208252,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634208195,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634208327,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634208340,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795634208365,"data":{"playerId":"player-mwwi8ui5-nsdd","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795634208386,"data":{"playerId":"player-mwwi8ui5-nsdd","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795634208388,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634208393,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795634208403,"data":{"playerId":"player-mwwi8uj7-hloa","name":"LatencyTester"}}
+{"type":"room_closed","timestamp":1795634208406,"data":{"roomId":"alpha"}}
+{"type":"player_left","timestamp":1795634208461,"data":{"playerId":"player-mwwi8uj7-hloa","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795634208461,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634431200,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795634431255,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431305,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634431318,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431422,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634431434,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795634431449,"data":{"roomId":"alpha"}}
+{"type":"player_joined","timestamp":1795634431456,"data":{"playerId":"player-mwwidmn3-1guw","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795634431476,"data":{"playerId":"player-mwwidmn3-1guw","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795634431476,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795634431480,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795634431486,"data":{"playerId":"player-mwwidmny-zuwu","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795634431551,"data":{"playerId":"player-mwwidmny-zuwu","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795634431551,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795635675335,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795635675368,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795635675385,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795635675427,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795635675500,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795635675534,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795635675542,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795635675554,"data":{"playerId":"player-mwwj4ale-8gfd","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795635675593,"data":{"playerId":"player-mwwj4ale-8gfd","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795635675593,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795635675596,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795635675601,"data":{"playerId":"player-mwwj4amp-7z1k","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795635675655,"data":{"playerId":"player-mwwj4amp-7z1k","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795635675655,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638025890,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638025889,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638025938,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638025966,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795638026044,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795638026047,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638026055,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638026069,"data":{"playerId":"player-mwwkio9g-31nv","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795638026105,"data":{"playerId":"player-mwwkio9g-31nv","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795638026105,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638026108,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638026113,"data":{"playerId":"player-mwwkioap-jhly","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795638026181,"data":{"playerId":"player-mwwkioap-jhly","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795638026181,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638144615,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638144639,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638144688,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638144666,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638144780,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795638144802,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638144811,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638144827,"data":{"playerId":"player-mwwkl7wa-52o8","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795638144855,"data":{"playerId":"player-mwwkl7wa-52o8","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795638144855,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638144857,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638144863,"data":{"playerId":"player-mwwkl7xb-r5sx","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795638144916,"data":{"playerId":"player-mwwkl7xb-r5sx","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795638144916,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638400564,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638400572,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638400620,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638400661,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795638400725,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795638400738,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638400733,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638400750,"data":{"playerId":"player-mwwkqpda-3dfh","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795638400781,"data":{"playerId":"player-mwwkqpda-3dfh","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795638400781,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638400783,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638400789,"data":{"playerId":"player-mwwkqped-x3g4","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795638400842,"data":{"playerId":"player-mwwkqped-x3g4","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795638400842,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638532795,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638532807,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638532894,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638532868,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638532981,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638532991,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638533004,"data":{"roomId":"alpha"}}
+{"type":"player_joined","timestamp":1795638533012,"data":{"playerId":"player-mwwktjf7-c3o4","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795638533031,"data":{"playerId":"player-mwwktjf7-c3o4","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795638533031,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638533034,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638533044,"data":{"playerId":"player-mwwktjg4-p8qx","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795638533105,"data":{"playerId":"player-mwwktjg4-p8qx","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795638533105,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638571908,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795638571901,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638571983,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638571958,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795638572077,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795638572085,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638572096,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638572116,"data":{"playerId":"player-mwwkudlg-zktp","name":"PilotTest"}}
+{"type":"player_left","timestamp":1795638572134,"data":{"playerId":"player-mwwkudlg-zktp","name":"PilotTest","reason":""}}
+{"type":"room_closed","timestamp":1795638572134,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795638572136,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795638572142,"data":{"playerId":"player-mwwkudm6-bzwn","name":"LatencyTester"}}
+{"type":"player_left","timestamp":1795638572197,"data":{"playerId":"player-mwwkudm6-bzwn","name":"LatencyTester","reason":""}}
+{"type":"room_closed","timestamp":1795638572197,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642763803,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642767123,"data":{"playerId":"player-mwwncahf-xlam","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642767125,"data":{"playerId":"player-mwwncahh-jod2","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642767160,"data":{"playerId":"player-mwwncahf-xlam","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642767172,"data":{"playerId":"player-mwwncahh-jod2","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642767180,"data":{"playerId":"player-mwwncahf-xlam","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642767180,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642771083,"data":{"roomId":"alpha","name":"Pilot A","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642771084,"data":{"playerId":"player-mwwncdjg-b5mq","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642771100,"data":{"playerId":"player-mwwncdjw-qx72","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642771200,"data":{"playerId":"player-mwwncdjg-b5mq","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642771248,"data":{"playerId":"player-mwwncdjw-qx72","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642771264,"data":{"playerId":"player-mwwncdjg-b5mq","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642771264,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642923500,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642926834,"data":{"playerId":"player-mwwnfppu-mha3","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642926837,"data":{"playerId":"player-mwwnfppx-tp4y","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642926938,"data":{"playerId":"player-mwwnfppu-mha3","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642926950,"data":{"playerId":"player-mwwnfppx-tp4y","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642926956,"data":{"playerId":"player-mwwnfppu-mha3","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642926957,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642930397,"data":{"roomId":"alpha","name":"Pilot A","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642930397,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642930402,"data":{"playerId":"player-mwwnfsgy-7gf2","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642930448,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642930501,"data":{"playerId":"player-mwwnfsgy-7gf2","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642930518,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642930518,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795644322039,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795644506217,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795693838222,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795693885298,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795693885355,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694081290,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694086389,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694086399,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694086428,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694137126,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694142205,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694142215,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694142243,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694184806,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694184854,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694188873,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694188881,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694188913,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694197468,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694197515,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694201525,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694201534,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694201568,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694223240,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694223256,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694223274,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694247934,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694247989,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694252015,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694252023,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694252031,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694252056,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694508837,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694508885,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694512907,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694512917,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694512925,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694512951,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694692914,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694692963,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694696981,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694696990,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694696997,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694697022,"data":{"roomId":"alpha"}}

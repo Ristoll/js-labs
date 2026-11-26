@@ -1,0 +1,19 @@
+{
+  "name": "shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --config ../vitest.config.ts"
+  },
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./sim": "./src/sim/index.ts",
+    "./sim/*": "./src/sim/*.ts",
+    "./protocol": "./src/protocol/index.ts",
+    "./codec": "./src/codec/index.ts",
+    "./prng": "./src/prng.ts"
+  }
+}
