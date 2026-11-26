@@ -141,3 +141,33 @@
 {"type":"player_joined","timestamp":1795638572142,"data":{"playerId":"player-mwwkudm6-bzwn","name":"LatencyTester"}}
 {"type":"player_left","timestamp":1795638572197,"data":{"playerId":"player-mwwkudm6-bzwn","name":"LatencyTester","reason":""}}
 {"type":"room_closed","timestamp":1795638572197,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642763803,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642767123,"data":{"playerId":"player-mwwncahf-xlam","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642767125,"data":{"playerId":"player-mwwncahh-jod2","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642767160,"data":{"playerId":"player-mwwncahf-xlam","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642767172,"data":{"playerId":"player-mwwncahh-jod2","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642767180,"data":{"playerId":"player-mwwncahf-xlam","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642767180,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642771083,"data":{"roomId":"alpha","name":"Pilot A","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642771084,"data":{"playerId":"player-mwwncdjg-b5mq","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642771100,"data":{"playerId":"player-mwwncdjw-qx72","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642771200,"data":{"playerId":"player-mwwncdjg-b5mq","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642771248,"data":{"playerId":"player-mwwncdjw-qx72","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642771264,"data":{"playerId":"player-mwwncdjg-b5mq","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642771264,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642923500,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642926834,"data":{"playerId":"player-mwwnfppu-mha3","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642926837,"data":{"playerId":"player-mwwnfppx-tp4y","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642926938,"data":{"playerId":"player-mwwnfppu-mha3","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642926950,"data":{"playerId":"player-mwwnfppx-tp4y","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642926956,"data":{"playerId":"player-mwwnfppu-mha3","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642926957,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795642930397,"data":{"roomId":"alpha","name":"Pilot A","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795642930397,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A"}}
+{"type":"player_joined","timestamp":1795642930402,"data":{"playerId":"player-mwwnfsgy-7gf2","name":"Pilot B"}}
+{"type":"chat","timestamp":1795642930448,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A","text":"hello e2e"}}
+{"type":"player_left","timestamp":1795642930501,"data":{"playerId":"player-mwwnfsgy-7gf2","name":"Pilot B","reason":""}}
+{"type":"player_left","timestamp":1795642930518,"data":{"playerId":"player-mwwnfsgt-qset","name":"Pilot A","reason":""}}
+{"type":"room_closed","timestamp":1795642930518,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795644322039,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795644506217,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}

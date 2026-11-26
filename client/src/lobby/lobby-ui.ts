@@ -1,3 +1,14 @@
+import type { Lobby, Room } from './lobby.ts';
+
+/** Minimal HTML escape to prevent XSS from room names. */
+function escapeHtml(str: string) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
 /**
  * Lobby DOM rendering module.
  *
@@ -6,13 +17,12 @@
  * or AbortController; it only reacts to events and dispatches user actions
  * back via the Lobby's join() method.
  *
- * @param {import('./lobby.ts').Lobby} lobby
  * @returns {{ show: () => void, hide: () => void }}
  */
-export function setupLobbyUI(lobby) {
+export function setupLobbyUI(lobby: Lobby) {
   const screen = document.getElementById('lobby-screen');
   const roomList = document.getElementById('lobby-room-list');
-  const playerNameInput = document.getElementById('lobby-player-name');
+  const playerNameInput = document.getElementById('lobby-player-name') as HTMLInputElement | null;
   const errorBanner = document.getElementById('lobby-error');
   const refreshIndicator = document.getElementById('lobby-refresh-indicator');
 
@@ -23,27 +33,27 @@ export function setupLobbyUI(lobby) {
 
   // ── Event listeners from Lobby data layer ──────────────────────────────────
 
-  lobby.addEventListener('roomsChanged', (e) => {
-    const { rooms } = e.detail;
+  lobby.addEventListener('roomsChanged', (e: Event) => {
+    const { rooms } = (e as CustomEvent<{ rooms: Room[] }>).detail;
     renderRoomList(rooms);
     hideError();
     flashRefreshIndicator();
   });
 
-  lobby.addEventListener('error', (e) => {
-    showError(e.detail.message);
+  lobby.addEventListener('error', (e: Event) => {
+    showError((e as CustomEvent<{ message: string }>).detail.message);
     flashRefreshIndicator();
   });
 
   // ── Internal rendering helpers ─────────────────────────────────────────────
 
-  function renderRoomList(rooms) {
+  function renderRoomList(rooms: Room[]) {
     if (!rooms || rooms.length === 0) {
-      roomList.innerHTML = '<li class="lobby-empty">No rooms available. Waiting for refresh…</li>';
+      roomList!.innerHTML = '<li class="lobby-empty">No rooms available. Waiting for refresh…</li>';
       return;
     }
 
-    roomList.innerHTML = rooms
+    roomList!.innerHTML = rooms
       .map(
         (room) => `
         <li class="lobby-room ${room.status === 'full' ? 'lobby-room--full' : ''}"
@@ -62,16 +72,18 @@ export function setupLobbyUI(lobby) {
       .join('');
 
     // Attach join-button click handlers
-    roomList.querySelectorAll('.lobby-join-btn:not([disabled])').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const roomId = btn.dataset.roomId;
-        const playerName = playerNameInput.value.trim() || 'Pilot';
+    roomList!.querySelectorAll('.lobby-join-btn:not([disabled])').forEach((btn) => {
+      const button = btn as HTMLElement;
+      button.addEventListener('click', () => {
+        const roomId = button.dataset.roomId;
+        if (!roomId) return;
+        const playerName = playerNameInput!.value.trim() || 'Pilot';
         lobby.join(roomId, playerName);
       });
     });
   }
 
-  function showError(message) {
+  function showError(message: string) {
     if (errorBanner) {
       errorBanner.textContent = `⚠ ${message}`;
       errorBanner.classList.remove('hidden');
@@ -90,23 +102,14 @@ export function setupLobbyUI(lobby) {
     setTimeout(() => refreshIndicator.classList.remove('lobby-refresh--active'), 600);
   }
 
-  /** Minimal HTML escape to prevent XSS from room names. */
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
   // ── Public API ─────────────────────────────────────────────────────────────
 
   function show() {
-    screen.classList.remove('hidden');
+    screen!.classList.remove('hidden');
   }
 
   function hide() {
-    screen.classList.add('hidden');
+    screen!.classList.add('hidden');
   }
 
   return { show, hide };

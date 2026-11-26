@@ -35,8 +35,5 @@ class SafeEventTarget {
   }
 }
 
-export const simEvents =
-  typeof globalThis.EventTarget === 'function'
-    ? new globalThis.EventTarget()
-    : new SafeEventTarget();
+export const simEvents = new SafeEventTarget();
 

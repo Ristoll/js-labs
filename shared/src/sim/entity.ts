@@ -20,7 +20,7 @@ export interface EntityOptions {
  */
 export class Entity {
   static #nextId = 1;
-  #id: EntityId;
+  readonly #id: EntityId;
   pos: Vector2;
   vel: Vector2;
   angle: number;

@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/index.ts",
     "dev": "node --watch --env-file=.env src/index.ts",
-    "test": "node --test test/**/*.test.js",
+    "test": "vitest run --config ../vitest.config.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {

@@ -1,5 +1,7 @@
 > _"A promise is a placeholder for a value you don't have yet, plus a contract about how you'll be told."_
 
+[![CI](https://github.com/rmalkevy/Programming-Practice-Projects/actions/workflows/ci.yml/badge.svg)](https://github.com/rmalkevy/Programming-Practice-Projects/actions/workflows/ci.yml)
+
 ---
 
 ## M4 — Ordering Puzzles and Failure Gallery
