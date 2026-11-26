@@ -1,4 +1,3 @@
-import type { ClientInput } from './match.ts';
 import type { ClientInput, Match } from './match.ts';
 import type { Player, Room } from './room.ts';
 import { Bot } from 'shared';

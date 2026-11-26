@@ -171,3 +171,45 @@
 {"type":"room_closed","timestamp":1795642930518,"data":{"roomId":"alpha"}}
 {"type":"room_created","timestamp":1795644322039,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
 {"type":"room_created","timestamp":1795644506217,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795693838222,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795693885298,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795693885355,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694081290,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694086389,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694086399,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694086428,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694137126,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694142205,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694142215,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694142243,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694184806,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694184854,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694188873,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694188881,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694188913,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694197468,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694197515,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694201525,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694201534,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694201568,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694223240,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694223256,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694223274,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694247934,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694247989,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694252015,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694252023,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694252031,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694252056,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694508837,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694508885,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694512907,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694512917,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694512925,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694512951,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694692914,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_created","timestamp":1795694692963,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694696981,"data":{"roomId":"alpha"}}
+{"type":"room_created","timestamp":1795694696990,"data":{"roomId":"alpha","name":"Alpha Sector","maxPlayers":4}}
+{"type":"room_closed","timestamp":1795694696997,"data":{"roomId":"alpha"}}
+{"type":"room_closed","timestamp":1795694697022,"data":{"roomId":"alpha"}}

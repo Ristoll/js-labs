@@ -1,0 +1,21 @@
+{
+  "name": "Dogfight — Multiplayer Space Arena",
+  "short_name": "Dogfight",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#38bdf8",
+  "orientation": "landscape",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/assets/sprites/ship.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "description": "Real-time multiplayer dogfighting game built with Node, WebSockets, and TypeScript.",
+  "categories": ["games", "action"]
+}

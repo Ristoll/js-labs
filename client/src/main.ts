@@ -18,6 +18,7 @@ import { Lobby } from './lobby/lobby.ts';
 import { setupLobbyUI } from './lobby/lobby-ui.ts';
 import { GameSocket } from './net/socket.ts';
 import { NetgraphUI } from './net/netgraph.ts';
+import { loadVersion } from './version.ts';
 
 // 1. Setup Canvas and Viewport
 const canvasElement = document.getElementById('game-canvas');
@@ -84,6 +85,7 @@ let inputSeq = 1;
 let pendingInputs = [];
 let netgraph = null;
 const snapshotBuffer = new SnapshotBuffer(66.67);
+let gameVersion = null;
 
 // --- DEMONSTRATION OF THE `this` BUG (Section 2) ---
 // Naive bug:
@@ -329,6 +331,7 @@ const loop = createLoop({
       respawnTimer,
       shipAlive: ship.alive,
       rapidFireTimer: ship.rapidFireTimer,
+      version: gameVersion,
     });
   },
 });
@@ -365,6 +368,9 @@ async function initGame() {
 
     // Connect WebSocket & Join Room
     initMultiplayer(joinData);
+
+    // Stamp the running build version (from /health) for the HUD.
+    gameVersion = await loadVersion();
 
     // Start simulation loop once assets are ready and player has joined
     loop.start();

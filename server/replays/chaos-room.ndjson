@@ -1,0 +1,27 @@
+{"type":"room_created","timestamp":1795694086408,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694086408,"data":{"playerId":"player-mwxhw8p4-w4qw","name":"Spammer"}}
+{"type":"room_closed","timestamp":1795694086428,"data":{"roomId":"chaos-room"}}
+{"type":"room_created","timestamp":1795694142224,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694142225,"data":{"playerId":"player-mwxhxfrk-ulkg","name":"Spammer"}}
+{"type":"player_left","timestamp":1795694142240,"data":{"playerId":"player-mwxhxfrk-ulkg","name":"Spammer","reason":"Invalid JSON payload"}}
+{"type":"room_closed","timestamp":1795694142241,"data":{"roomId":"chaos-room"}}
+{"type":"room_created","timestamp":1795694188896,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694188896,"data":{"playerId":"player-mwxhyfs0-u87j","name":"Spammer"}}
+{"type":"player_left","timestamp":1795694188913,"data":{"playerId":"player-mwxhyfs0-u87j","name":"Spammer","reason":"Invalid JSON payload"}}
+{"type":"room_closed","timestamp":1795694188913,"data":{"roomId":"chaos-room"}}
+{"type":"room_created","timestamp":1795694201549,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694201550,"data":{"playerId":"player-mwxhypjh-b3vx","name":"Spammer"}}
+{"type":"player_left","timestamp":1795694201567,"data":{"playerId":"player-mwxhypjh-b3vx","name":"Spammer","reason":"Invalid JSON payload"}}
+{"type":"room_closed","timestamp":1795694201567,"data":{"roomId":"chaos-room"}}
+{"type":"room_created","timestamp":1795694252038,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694252038,"data":{"playerId":"player-mwxhzshy-5ep4","name":"Spammer"}}
+{"type":"player_left","timestamp":1795694252054,"data":{"playerId":"player-mwxhzshy-5ep4","name":"Spammer","reason":"Invalid JSON payload"}}
+{"type":"room_closed","timestamp":1795694252054,"data":{"roomId":"chaos-room"}}
+{"type":"room_created","timestamp":1795694512933,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694512933,"data":{"playerId":"player-mwxi5dt1-q0ob","name":"Spammer"}}
+{"type":"player_left","timestamp":1795694512949,"data":{"playerId":"player-mwxi5dt1-q0ob","name":"Spammer","reason":"Invalid JSON payload"}}
+{"type":"room_closed","timestamp":1795694512949,"data":{"roomId":"chaos-room"}}
+{"type":"room_created","timestamp":1795694697005,"data":{"roomId":"chaos-room","name":"Spammer","maxPlayers":4}}
+{"type":"player_joined","timestamp":1795694697005,"data":{"playerId":"player-mwxi9bu5-6gr5","name":"Spammer"}}
+{"type":"player_left","timestamp":1795694697021,"data":{"playerId":"player-mwxi9bu5-6gr5","name":"Spammer","reason":"Invalid JSON payload"}}
+{"type":"room_closed","timestamp":1795694697021,"data":{"roomId":"chaos-room"}}

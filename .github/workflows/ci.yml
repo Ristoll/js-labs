@@ -3,10 +3,12 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 permissions:
   contents: read
+  packages: write  # for GHCR image push on tags
 
 jobs:
   typecheck:
@@ -66,3 +68,48 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium firefox
       - run: npm run test:e2e
+
+  # M3: tag-triggered container build + push to GHCR + deploy.
+  # Runs only on annotated/lightweight tags matching v* (e.g. v1.0.0).
+  # The platform token is a repository secret (DEPLOY_HOOK_URL for Render-style
+  # hooks; swap for flyctl/Railway as needed).
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: [typecheck, lint, test, build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Build and push to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/dogfight: ${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/dogfight: latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger platform deploy
+        if: env.DEPLOY_HOOK_URL != ''
+        run: |
+          curl -X POST "${DEPLOY_HOOK_URL}" || true
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
