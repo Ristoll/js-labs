@@ -2,6 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { streamReplayFile } from './streams.ts';
 import { BotManager } from './bot-manager.ts';
+import { log } from './logger.ts';
+import {
+  register,
+  setPlayers,
+  setRooms,
+  incRejection,
+  getMetrics,
+} from './metrics.ts';
 import type { ServerResponse, IncomingMessage } from 'node:http';
 import type { RoomManager } from './room-manager.ts';
 import type { ServerConfig } from './config.ts';
@@ -53,7 +61,8 @@ export async function handleApi(
   req: IncomingMessage,
   res: ServerResponse,
   roomManager: RoomManager,
-  config: ServerConfig
+  config: ServerConfig,
+  isReady: () => boolean
 ): Promise<void> {
   const url = new URL(req.url ?? '', `http://${req.headers.host ? (Array.isArray(req.headers.host) ? req.headers.host[0] : req.headers.host) : 'localhost'}`);
   const { pathname } = url;
@@ -69,14 +78,41 @@ export async function handleApi(
     return;
   }
 
-  // 1. GET /health
+  // 1. GET /health — liveness (the process responds)
   if (pathname === '/health' && method === 'GET') {
     writeJson(res, 200, {
       status: 'ok',
+      version: config.buildVersion,
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       timestamp: Date.now(),
     });
+    return;
+  }
+
+  // 1b. GET /ready — readiness (can serve: not shutting down)
+  if (pathname === '/ready' && method === 'GET') {
+    if (!isReady()) {
+      writeJson(res, 503, {
+        status: 'not ready',
+        version: config.buildVersion,
+        reason: 'shutting down',
+      });
+      return;
+    }
+    writeJson(res, 200, {
+      status: 'ready',
+      version: config.buildVersion,
+      timestamp: Date.now(),
+    });
+    return;
+  }
+
+  // 1c. GET /metrics — Prometheus text format
+  if (pathname === '/metrics' && method === 'GET') {
+    const text = await getMetrics();
+    res.writeHead(200, { 'Content-Type': register.contentType, 'Cache-Control': 'no-cache' });
+    res.end(text);
     return;
   }
 

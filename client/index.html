@@ -3,8 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lab 03 — Asynchronous JavaScript</title>
+    <title>Dogfight — Multiplayer Space Arena</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/assets/sprites/ship.png" />
     <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+    </script>
   </head>
   <body>
     <canvas id="game-canvas"></canvas>
