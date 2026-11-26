@@ -7,13 +7,11 @@
  * - Interpolation alpha in [0, 1) passed to render.
  * - Accurate performance metrics:
  *   frame, tick, delta, jitter, mode, steps/s, frames/s.
- * - Live hooks for Milestone 4 experiments (hitch injection, setInterval, variable step).
  */
 export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) {
   let accumulator = 0;
   let last = 0;
   let animationId = null;
-  let intervalId = null;
   let running = false;
   let frameCallback = onFrame;
   let customModeStatus = null;
@@ -30,11 +28,6 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
   let lastFrameDuration = 0; // in milliseconds
   let prevFrameDuration = 0;
   let rollingJitter = 0; // in milliseconds
-
-  // Milestone 4 Experiment flags
-  let busyWaitEvery60 = false;
-  let useSetInterval = false;
-  let variableTimestep = false;
 
   function tick(now) {
     if (!running) return;
@@ -55,26 +48,10 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
     prevFrameDuration = currentDeltaMs;
     last = now;
 
-    // Experiment 1: 100ms synchronous block every 60th frame
-    if (busyWaitEvery60 && totalFrames % 60 === 0 && totalFrames > 0) {
-      const freezeStart = performance.now();
-      while (performance.now() < freezeStart + 100) {
-        // Run-to-completion block on main thread
-      }
-    }
+    // Clamped accumulator (max 0.25s / 250ms hitch)
+    accumulator += Math.min(deltaSec, 0.25);
 
-    // Experiment 3: Variable timestep (simulate(dt) once per frame without accumulator)
-    if (variableTimestep) {
-      const dt = Math.min(deltaSec, 0.25);
-      simulate(dt);
-      stepsThisSec++;
-      totalTicks++;
-      render(1, getStats());
-    } else {
-      // Clamped accumulator (max 0.25s / 250ms hitch)
-      accumulator += Math.min(deltaSec, 0.25);
-
-      while (accumulator >= step) {
+    while (accumulator >= step) {
         simulate(step);
         accumulator -= step;
         stepsThisSec++;
@@ -83,7 +60,6 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
 
       const alpha = accumulator / step;
       render(alpha, getStats());
-    }
 
     totalFrames++;
     framesThisSec++;
@@ -97,7 +73,7 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
       statsTimer = now;
     }
 
-    // Hook for real frame measurement (Experiment 3) — executes strictly AFTER physics & render of this frame
+    // Hook for real frame measurement — executes strictly AFTER physics & render of this frame
     if (frameCallback) {
       frameCallback({
         dt: deltaSec,
@@ -108,7 +84,7 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
       });
     }
 
-    if (!useSetInterval && running) {
+    if (running) {
       animationId = requestAnimationFrame(tick);
     }
   }
@@ -124,13 +100,7 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
     prevFrameDuration = 0;
     rollingJitter = 0;
 
-    if (useSetInterval) {
-      intervalId = setInterval(() => {
-        tick(performance.now());
-      }, 16);
-    } else {
-      animationId = requestAnimationFrame(tick);
-    }
+    animationId = requestAnimationFrame(tick);
   }
 
   function stop() {
@@ -138,10 +108,6 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
     if (animationId !== null) {
       cancelAnimationFrame(animationId);
       animationId = null;
-    }
-    if (intervalId !== null) {
-      clearInterval(intervalId);
-      intervalId = null;
     }
     last = 0;
   }
@@ -153,9 +119,6 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
 
   function getModeString() {
     if (customModeStatus) return customModeStatus;
-    if (busyWaitEvery60) return 'hitch (100ms/60f)';
-    if (useSetInterval) return 'setInterval (16ms)';
-    if (variableTimestep) return 'variable timestep';
     return 'fixed (60 Hz)';
   }
 
@@ -176,24 +139,6 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
     };
   }
 
-  function setBusyWait(enabled) {
-    busyWaitEvery60 = Boolean(enabled);
-  }
-
-  function setUseSetInterval(enabled) {
-    const shouldEnable = Boolean(enabled);
-    if (useSetInterval === shouldEnable) return;
-    useSetInterval = shouldEnable;
-    if (running) {
-      stop();
-      start();
-    }
-  }
-
-  function setVariableTimestep(enabled) {
-    variableTimestep = Boolean(enabled);
-  }
-
   function setOnFrame(callback) {
     frameCallback = callback;
   }
@@ -207,12 +152,6 @@ export function createLoop({ step = 1 / 60, simulate, render, onFrame = null }) 
     stop,
     resetAccumulator,
     getStats,
-    setBusyWait,
-    isBusyWait: () => busyWaitEvery60,
-    setUseSetInterval,
-    isUseSetInterval: () => useSetInterval,
-    setVariableTimestep,
-    isVariableTimestep: () => variableTimestep,
     setOnFrame,
     setCustomMode,
   };

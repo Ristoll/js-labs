@@ -57,6 +57,9 @@ export class Match {
   readonly playerShips = new Map<string, Ship>();
   readonly respawnCooldowns = new Map<number, number>(); // ship id -> seconds remaining
 
+  /** Hooks invoked at the start of each tick, before inputs are processed. Used by bots. */
+  readonly preTickHandlers = new Array<(nowMs: number) => void>();
+
   latencyConfig = {
     delayMs: 0,
     jitterMs: 0,
@@ -120,7 +123,14 @@ export class Match {
     const actualInterval = tickStart - this.lastTickTime;
     this.lastTickTime = tickStart;
 
-    this.lastTickJitter = Math.abs(actualInterval - this.intervalMs);
+    // 0. Let registered pre-tick handlers (e.g. bots) inject inputs for this tick.
+    this.preTickHandlers.forEach((handler) => {
+      try {
+        handler(tickStart);
+      } catch (err) {
+        console.error('[Match] Pre-tick handler threw:', err instanceof Error ? err.message : String(err));
+      }
+    });
 
     this.tick++;
     this.tickCount++;

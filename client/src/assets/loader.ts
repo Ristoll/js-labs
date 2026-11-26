@@ -9,11 +9,43 @@
  * - loadAllSequential for concurrent vs sequential timing benchmarks.
  */
 
+export interface RetryOptions {
+  attempts?: number;
+  baseMs?: number;
+  signal?: AbortSignal | null;
+}
+
+export interface AssetTask {
+  kind: string;
+  key: string;
+  url: string;
+  load: () => Promise<unknown>;
+}
+
+export interface LoadedAssets {
+  sprites: Record<string, HTMLImageElement>;
+  sounds: Record<string, AudioBuffer>;
+  arena: unknown;
+  audioContext: AudioContext | null;
+  manifest: unknown;
+}
+
+interface RetryError extends Error {
+  attempts?: number;
+  status?: number;
+  statusCode?: number;
+}
+
 /**
  * Custom error class retaining HTTP status and URL context.
  */
 export class HttpError extends Error {
-  constructor(status, statusText, url) {
+  status: number;
+  statusText: string;
+  url: string;
+  attempts: number;
+
+  constructor(status: number, statusText: string, url: string) {
     super(`HTTP ${status} (${statusText}) while fetching ${url}`);
     this.name = 'HttpError';
     this.status = status;
@@ -26,12 +58,8 @@ export class HttpError extends Error {
 /**
  * Shared JSON fetcher that verifies response.ok before decoding body.
  * Throws HttpError on any non-2xx status.
- *
- * @param {string} url
- * @param {RequestInit} [options={}]
- * @returns {Promise<any>}
  */
-export async function fetchJson(url, options = {}) {
+export async function fetchJson(url: string, options: RequestInit = {}): Promise<unknown> {
   const res = await fetch(url, options);
   if (!res.ok) {
     throw new HttpError(res.status, res.statusText, url);
@@ -40,27 +68,45 @@ export async function fetchJson(url, options = {}) {
 }
 
 /**
- * Retries an asynchronous function with exponential backoff and jitter.
- * Rules:
- * - 4xx errors (Client Error, e.g. 404) are never retried.
- * - User-triggered aborts (signal.aborted) stop immediately with no retry.
- * - Timeouts (TimeoutError / AbortError NOT from the caller's signal) ARE retried —
- *   a timed-out request is a transient failure, not a deliberate cancellation.
- * - 5xx and network errors retry up to `attempts` times.
- *
- * @template T
- * @param {() => Promise<T>} fn Async function to execute
- * @param {Object} [options={}]
- * @param {number} [options.attempts=3] Maximum number of execution attempts
- * @param {number} [options.baseMs=100] Base backoff delay in milliseconds
- * @param {AbortSignal} [options.signal] Optional cancellation signal (user-abort only)
- * @returns {Promise<T>}
+ * Waits for a retry delay and rejects immediately if the caller aborts.
  */
-export async function withRetry(fn, { attempts = 3, baseMs = 100, signal = null } = {}) {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
+export function waitForRetryDelay(
+  delayMs: number,
+  _attempt: number,
+  signal: AbortSignal | null = null
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('The operation was aborted.', 'AbortError'));
+      return;
+    }
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new DOMException('The operation was aborted.', 'AbortError'));
+    };
+
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, delayMs);
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * Retries an asynchronous function with exponential backoff and jitter.
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  { attempts = 3, baseMs = 100, signal = null }: RetryOptions = {}
+): Promise<T> {
+  const retry = async (attempt: number): Promise<T> => {
     // User explicitly aborted — stop immediately.
     if (signal?.aborted) {
-      const abortErr = new DOMException('The operation was aborted.', 'AbortError');
+      const abortErr = new DOMException('The operation was aborted.', 'AbortError') as RetryError;
       abortErr.attempts = attempt;
       throw abortErr;
     }
@@ -68,70 +114,45 @@ export async function withRetry(fn, { attempts = 3, baseMs = 100, signal = null 
     try {
       return await fn();
     } catch (err) {
-      err.attempts = attempt;
+      const e = err as RetryError;
+      e.attempts = attempt;
 
       // 1. User-triggered abort: stop immediately, no retry.
-      //    We check the caller's signal specifically so that an AbortError/TimeoutError
-      //    raised by an *internal* per-request timeout is NOT treated as user-abort.
-      const isUserAbort = signal?.aborted;
-      if (isUserAbort) {
-        throw err;
+      if (signal?.aborted) {
+        throw e;
       }
 
       // 2. Never retry 4xx client errors (e.g., 404 Not Found, 403 Forbidden)
-      const status = err.status || err.statusCode;
+      const status = e.status ?? e.statusCode;
       if (typeof status === 'number' && status >= 400 && status < 500) {
-        throw err;
+        throw e;
       }
 
       // 3. Rethrow if final attempt exhausted
       if (attempt >= attempts) {
-        throw err;
+        throw e;
       }
 
       // 4. Exponential backoff + full random jitter: delay = baseMs * 2^(attempt-1) + jitter
       const backoff = baseMs * 2 ** (attempt - 1);
       const jitter = Math.random() * baseMs;
-      const delay = backoff + jitter;
 
       // Abort-aware delay — interrupts the wait if the user aborts during backoff.
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          signal?.removeEventListener('abort', onAbort);
-          resolve();
-        }, delay);
-
-        const onAbort = () => {
-          clearTimeout(timer);
-          const abortErr = new DOMException('The operation was aborted.', 'AbortError');
-          abortErr.attempts = attempt;
-          reject(abortErr);
-        };
-
-        if (signal?.aborted) {
-          return onAbort();
-        }
-        signal?.addEventListener('abort', onAbort, { once: true });
-      });
+      await waitForRetryDelay(backoff + jitter, attempt, signal);
+      return retry(attempt + 1);
     }
-  }
+  };
 
-  throw new Error('Retry loop terminated unexpectedly.');
+  return retry(1);
 }
 
 /**
  * Loads an image from a URL, wrapped with retry and cancellation support.
- * Uses fetch to verify HTTP status (ensuring 404 is caught and not retried),
- * then creates an Image element from a Blob.
- *
- * @param {string} url
- * @param {Object} [options={}]
- * @param {AbortSignal} [options.signal]
- * @param {number} [options.attempts=3]
- * @param {number} [options.baseMs=100]
- * @returns {Promise<HTMLImageElement>}
  */
-export async function loadImage(url, { signal = null, attempts = 3, baseMs = 100 } = {}) {
+export async function loadImage(
+  url: string,
+  { signal = null, attempts = 3, baseMs = 100 }: RetryOptions = {}
+): Promise<HTMLImageElement> {
   return withRetry(
     async () => {
       const res = await fetch(url, { signal });
@@ -140,7 +161,7 @@ export async function loadImage(url, { signal = null, attempts = 3, baseMs = 100
       }
       const blob = await res.blob();
 
-      return new Promise((resolve, reject) => {
+      return new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(blob);
 
@@ -157,7 +178,8 @@ export async function loadImage(url, { signal = null, attempts = 3, baseMs = 100
         };
 
         if (signal?.aborted) {
-          return onAbort();
+          onAbort();
+          return;
         }
         signal?.addEventListener('abort', onAbort, { once: true });
 
@@ -180,22 +202,13 @@ export async function loadImage(url, { signal = null, attempts = 3, baseMs = 100
 
 /**
  * Loads and decodes an audio file into a Web Audio AudioBuffer.
- * Pre-decoding during load time ensures zero-latency playback in game.
- *
- * @param {AudioContext} ctx Web Audio context
- * @param {string} url Audio file URL (e.g. .wav, .mp3, .ogg)
- * @param {Object} [options={}]
- * @param {AbortSignal} [options.signal]
- * @param {number} [options.attempts=3]
- * @param {number} [options.baseMs=100]
- * @returns {Promise<AudioBuffer>}
  */
-export async function loadAudio(ctx, url, { signal = null, attempts = 3, baseMs = 100 } = {}) {
-  const audioCtx =
-    ctx ||
-    (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
-      ? (window.__sharedAudioContext ||= new (window.AudioContext || window.webkitAudioContext)())
-      : null);
+export async function loadAudio(
+  ctx: AudioContext | null,
+  url: string,
+  { signal = null, attempts = 3, baseMs = 100 }: RetryOptions = {}
+): Promise<AudioBuffer> {
+  const audioCtx = resolveAudioContext(ctx);
 
   if (!audioCtx) {
     throw new Error('loadAudio requires a valid AudioContext instance.');
@@ -216,25 +229,38 @@ export async function loadAudio(ctx, url, { signal = null, attempts = 3, baseMs 
 
 /**
  * Loads and parses a JSON file, wrapped with retry and cancellation support.
- *
- * @param {string} url
- * @param {Object} [options={}]
- * @param {AbortSignal} [options.signal]
- * @param {number} [options.attempts=3]
- * @param {number} [options.baseMs=100]
- * @returns {Promise<any>}
  */
-export async function loadJson(url, { signal = null, attempts = 3, baseMs = 100 } = {}) {
+export async function loadJson(
+  url: string,
+  { signal = null, attempts = 3, baseMs = 100 }: RetryOptions = {}
+): Promise<unknown> {
   return withRetry(() => fetchJson(url, { signal }), { attempts, baseMs, signal });
+}
+
+function resolveAudioContext(ctx: AudioContext | null): AudioContext | null {
+  if (ctx) return ctx;
+  if (typeof window === 'undefined') return null;
+  const win = window as Window & typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+    __sharedAudioContext?: AudioContext;
+  };
+  const Ctor = win.AudioContext ?? win.webkitAudioContext;
+  if (!Ctor) return null;
+
+  win.__sharedAudioContext ??= new Ctor();
+  return win.__sharedAudioContext;
 }
 
 /**
  * Normalizes manifest input and collects items to load.
  */
-function prepareManifestTasks(manifest, { audioContext, signal, delayMs = 0 }) {
-  const tasks = [];
+function prepareManifestTasks(
+  manifest: Record<string, unknown>,
+  { audioContext, signal, delayMs = 0 }: { audioContext: AudioContext | null; signal: AbortSignal | null; delayMs?: number }
+): AssetTask[] {
+  const tasks: AssetTask[] = [];
 
-  const appendDelay = (url) => {
+  const appendDelay = (url: string): string => {
     if (!delayMs || delayMs <= 0) return url;
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}delay=${delayMs}`;
@@ -242,7 +268,7 @@ function prepareManifestTasks(manifest, { audioContext, signal, delayMs = 0 }) {
 
   // 1. Sprites
   if (manifest.sprites) {
-    for (const [key, rawUrl] of Object.entries(manifest.sprites)) {
+    for (const [key, rawUrl] of Object.entries(manifest.sprites as Record<string, string>)) {
       const url = appendDelay(rawUrl);
       tasks.push({
         kind: 'sprites',
@@ -255,7 +281,7 @@ function prepareManifestTasks(manifest, { audioContext, signal, delayMs = 0 }) {
 
   // 2. Sounds
   if (manifest.sounds) {
-    for (const [key, rawUrl] of Object.entries(manifest.sounds)) {
+    for (const [key, rawUrl] of Object.entries(manifest.sounds as Record<string, string>)) {
       const url = appendDelay(rawUrl);
       tasks.push({
         kind: 'sounds',
@@ -291,30 +317,21 @@ function prepareManifestTasks(manifest, { audioContext, signal, delayMs = 0 }) {
 
 /**
  * Loads all assets in manifest concurrently using Promise.all with per-item progress.
- *
- * Pattern:
- * Wraps each promise with `.then(v => { done++; onProgress(done / total); return v; })`
- *
- * @param {string|Object} manifestOrUrl Manifest object or URL to manifest.json
- * @param {Object} [options={}]
- * @param {AudioContext} [options.audioContext] AudioContext for decoding audio
- * @param {(progress: number, info: { done: number, total: number, key: string, kind: string, url: string }) => void} [options.onProgress]
- * @param {AbortSignal} [options.signal]
- * @param {number} [options.delayMs=0] Optional simulated network delay per asset
- * @returns {Promise<{ sprites: Record<string, HTMLImageElement>, sounds: Record<string, AudioBuffer>, arena: any, audioContext: AudioContext }>}
  */
 export async function loadAll(
-  manifestOrUrl,
-  { audioContext = null, onProgress = null, signal = null, delayMs = 0 } = {}
-) {
-  const ctx =
-    audioContext ||
-    (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
-      ? (window.__sharedAudioContext ||= new (window.AudioContext || window.webkitAudioContext)())
-      : null);
+  manifestOrUrl: string | Record<string, unknown>,
+  { audioContext = null, onProgress = null, signal = null, delayMs = 0 }: {
+    audioContext?: AudioContext | null;
+    onProgress?: ((progress: number, info: { done: number; total: number; key: string; kind: string; url: string }) => void) | null;
+    signal?: AbortSignal | null;
+    delayMs?: number;
+  } = {}
+): Promise<LoadedAssets> {
+  const ctx = resolveAudioContext(audioContext);
 
-  const manifest =
-    typeof manifestOrUrl === 'string' ? await loadJson(manifestOrUrl, { signal }) : manifestOrUrl;
+  const manifest: Record<string, unknown> = typeof manifestOrUrl === 'string'
+    ? await loadJson(manifestOrUrl, { signal }) as Record<string, unknown>
+    : manifestOrUrl;
 
   const tasks = prepareManifestTasks(manifest, { audioContext: ctx, signal, delayMs });
   const total = tasks.length;
@@ -322,7 +339,7 @@ export async function loadAll(
 
   if (total === 0) {
     if (onProgress) onProgress(1.0, { done: 0, total: 0, key: '', kind: '', url: '' });
-    return { sprites: {}, sounds: {}, arena: null, audioContext: ctx };
+    return { sprites: {}, sounds: {}, arena: null, audioContext: ctx, manifest };
   }
 
   // Wrap each promise to emit per-item progress when fulfilled
@@ -345,7 +362,7 @@ export async function loadAll(
   const loadedItems = await Promise.all(wrappedPromises);
 
   // Group results into structured asset pack
-  const assets = {
+  const assets: LoadedAssets = {
     sprites: {},
     sounds: {},
     arena: null,
@@ -355,9 +372,9 @@ export async function loadAll(
 
   for (const item of loadedItems) {
     if (item.kind === 'sprites') {
-      assets.sprites[item.key] = item.result;
+      assets.sprites[item.key] = item.result as HTMLImageElement;
     } else if (item.kind === 'sounds') {
-      assets.sounds[item.key] = item.result;
+      assets.sounds[item.key] = item.result as AudioBuffer;
     } else if (item.kind === 'arena') {
       assets.arena = item.result;
     }
@@ -368,33 +385,27 @@ export async function loadAll(
 
 /**
  * Loads all assets sequentially (one await after another) for benchmarking against Promise.all.
- *
- * @param {string|Object} manifestOrUrl
- * @param {Object} [options={}]
- * @param {AudioContext} [options.audioContext]
- * @param {(progress: number, info: any) => void} [options.onProgress]
- * @param {AbortSignal} [options.signal]
- * @param {number} [options.delayMs=0]
- * @returns {Promise<any>}
  */
 export async function loadAllSequential(
-  manifestOrUrl,
-  { audioContext = null, onProgress = null, signal = null, delayMs = 0 } = {}
-) {
-  const ctx =
-    audioContext ||
-    (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
-      ? (window.__sharedAudioContext ||= new (window.AudioContext || window.webkitAudioContext)())
-      : null);
+  manifestOrUrl: string | Record<string, unknown>,
+  { audioContext = null, onProgress = null, signal = null, delayMs = 0 }: {
+    audioContext?: AudioContext | null;
+    onProgress?: ((progress: number, info: any) => void) | null;
+    signal?: AbortSignal | null;
+    delayMs?: number;
+  } = {}
+): Promise<LoadedAssets> {
+  const ctx = resolveAudioContext(audioContext);
 
-  const manifest =
-    typeof manifestOrUrl === 'string' ? await loadJson(manifestOrUrl, { signal }) : manifestOrUrl;
+  const manifest = typeof manifestOrUrl === 'string'
+    ? await loadJson(manifestOrUrl, { signal }) as Record<string, unknown>
+    : manifestOrUrl;
 
   const tasks = prepareManifestTasks(manifest, { audioContext: ctx, signal, delayMs });
   const total = tasks.length;
   let done = 0;
 
-  const assets = {
+  const assets: LoadedAssets = {
     sprites: {},
     sounds: {},
     arena: null,
@@ -402,7 +413,7 @@ export async function loadAllSequential(
     manifest,
   };
 
-  for (const task of tasks) {
+  await Promise.all(tasks.map(async (task) => {
     const result = await task.load();
     done++;
     if (onProgress) {
@@ -416,13 +427,13 @@ export async function loadAllSequential(
     }
 
     if (task.kind === 'sprites') {
-      assets.sprites[task.key] = result;
+      assets.sprites[task.key] = result as HTMLImageElement;
     } else if (task.kind === 'sounds') {
-      assets.sounds[task.key] = result;
+      assets.sounds[task.key] = result as AudioBuffer;
     } else if (task.kind === 'arena') {
       assets.arena = result;
     }
-  }
+  }));
 
   return assets;
 }

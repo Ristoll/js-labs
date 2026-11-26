@@ -19,15 +19,26 @@ const ROOMS_URL = '/api/rooms';
 const REFRESH_INTERVAL_MS = 5000;
 const REQUEST_TIMEOUT_MS = 4000;
 
+/**
+ * A room in the lobby, as returned by /api/rooms.
+ */
+export type Room = {
+  id: string;
+  name: string;
+  status: string;
+  players: number;
+  maxPlayers: number;
+};
+
 export class Lobby extends EventTarget {
   /** @type {Room[]|null} */
-  #rooms = null;
+  #rooms: Room[] | null = null;
 
   /** @type {AbortController|null} — controls the currently in-flight fetch */
-  #fetchController = null;
+  #fetchController: AbortController | null = null;
 
   /** @type {number|null} — setInterval handle */
-  #intervalId = null;
+  #intervalId: number | null = null;
 
   /** @type {boolean} */
   #active = false;
@@ -68,13 +79,13 @@ export class Lobby extends EventTarget {
       this.#rooms = await res.json();
       this.dispatchEvent(new CustomEvent('roomsChanged', { detail: { rooms: this.#rooms } }));
     } catch (err) {
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         // Intentional cancellation (stop() was called or timeout fired) — silently ignore.
         return;
       }
       this.dispatchEvent(
         new CustomEvent('error', {
-          detail: { message: err.message },
+          detail: { message: err instanceof Error ? err.message : String(err) },
         })
       );
     } finally {
@@ -85,7 +96,7 @@ export class Lobby extends EventTarget {
     }
   }
 
-  async createRoom({ name, maxPlayers = 4 }) {
+  async createRoom({ name, maxPlayers = 4 }: { name: string; maxPlayers?: number }) {
     try {
       const res = await fetch('/api/rooms', {
         method: 'POST',
@@ -100,7 +111,11 @@ export class Lobby extends EventTarget {
       await this.refresh();
       return newRoom;
     } catch (err) {
-      this.dispatchEvent(new CustomEvent('error', { detail: { message: err.message } }));
+      this.dispatchEvent(
+        new CustomEvent('error', {
+          detail: { message: err instanceof Error ? err.message : String(err) },
+        })
+      );
       throw err;
     }
   }
@@ -113,8 +128,8 @@ export class Lobby extends EventTarget {
   start() {
     if (this.#active) return;
     this.#active = true;
-    this.refresh();
-    this.#intervalId = setInterval(() => this.refresh(), REFRESH_INTERVAL_MS);
+    void this.refresh();
+    this.#intervalId = setInterval(() => void this.refresh(), REFRESH_INTERVAL_MS);
   }
 
   /**
@@ -140,8 +155,8 @@ export class Lobby extends EventTarget {
    * @param {string} roomId
    * @param {string} playerName
    */
-  join(roomId, playerName) {
-    const room = this.#rooms?.find((r) => r.id === roomId);
+  join(roomId: string, playerName: string) {
+    const room = this.#rooms?.find((r: { id: any; }) => r.id === roomId);
     if (!room) {
       this.dispatchEvent(
         new CustomEvent('error', {

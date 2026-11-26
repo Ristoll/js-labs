@@ -15,7 +15,7 @@
 import { simEvents } from './sim/events.ts';
 
 /** @type {AudioContext|null} */
-let audioCtx = null;
+let audioCtx: AudioContext | null = null;
 
 /**
  * Returns the single shared AudioContext, creating it on the first call.
@@ -29,9 +29,7 @@ let audioCtx = null;
  * @returns {AudioContext}
  */
 export function getSharedAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new AudioContext();
-  }
+  audioCtx ??= new AudioContext();
   return audioCtx;
 }
 
@@ -41,7 +39,7 @@ export function getSharedAudioContext() {
  *
  * @param {AudioBuffer|undefined} buffer
  */
-function playBuffer(buffer) {
+function playBuffer(buffer: AudioBuffer | undefined) {
   if (!buffer) return;
   const ctx = getSharedAudioContext();
   if (ctx.state === 'suspended') return;
@@ -49,6 +47,16 @@ function playBuffer(buffer) {
   source.buffer = buffer;
   source.connect(ctx.destination);
   source.start(0);
+}
+
+/**
+ * Unlock (resume) the shared AudioContext on the first user gesture.
+ */
+function unlock() {
+  const ctx = getSharedAudioContext();
+  if (ctx.state === 'suspended') {
+    void ctx.resume();
+  }
 }
 
 /**
@@ -62,16 +70,10 @@ function playBuffer(buffer) {
  *
  * @param {{ sounds: Object<string, AudioBuffer> }} gameAssets
  */
-export function setupAudio(gameAssets) {
+export function setupAudio(gameAssets: { sounds?: Record<string, AudioBuffer> }) {
   const sounds = gameAssets?.sounds ?? {};
 
   // Unlock (resume) the shared AudioContext on the first user gesture.
-  function unlock() {
-    const ctx = getSharedAudioContext();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-  }
   window.addEventListener('click', unlock, { once: true });
   window.addEventListener('keydown', unlock, { once: true });
 
