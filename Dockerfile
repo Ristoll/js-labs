@@ -1,66 +1,45 @@
+# syntax = docker/dockerfile:1
 
-# syntax=docker/dockerfile:1
+# Adjust NODE_VERSION as desired
+ARG NODE_VERSION=22.21.1
+FROM node:${NODE_VERSION}-slim AS base
 
-########## Stage 1: builder ##########
-FROM node:22-alpine AS builder
+LABEL fly_launch_runtime="Node.js"
 
+# Node.js app lives here
 WORKDIR /app
 
-# Copy workspace package manifests.
-COPY package.json package-lock.json ./
-COPY shared/package.json ./shared/package.json
-COPY server/package.json ./server/package.json
-COPY client/package.json ./client/package.json
+# Set production environment
+ENV NODE_ENV="production"
 
-# Install dependencies.
-RUN npm ci
 
-# Copy source files.
+# Throw-away build stage to reduce size of final image
+FROM base AS build
+
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+
+# Install node modules
+COPY package-lock.json package.json ./
+RUN npm ci --include=dev
+
+# Copy application code
 COPY . .
 
-# Build client.
+# Build application
 RUN npm run build
 
+# Remove development dependencies
+RUN npm prune --omit=dev
 
-########## Stage 2: runtime ##########
-FROM node:22-alpine
 
-WORKDIR /app
+# Final stage for app image
+FROM base
 
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOST=0.0.0.0
+# Copy built application
+COPY --from=build /app /app
 
-# Copy runtime dependencies.
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy built client.
-COPY --from=builder /app/client/dist ./client/dist
-
-# Copy shared package.
-COPY --from=builder /app/shared ./shared
-
-# Copy server source.
-COPY --from=builder /app/server/src ./server/src
-
-# Copy package manifests.
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/server/package.json ./server/package.json
-
-# Create non-root user and writable replay directory.
-RUN addgroup -S appuser \
-    && adduser -S appuser -G appuser \
-    && mkdir -p /app/server/replays \
-    && chown -R appuser:appuser /app/server/replays
-
-# Run application as non-root user.
-USER appuser
-
+# Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
-
-# Container healthcheck.
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT:-3000}/health || exit 1
-
-# Start Node.js server.
-CMD ["node", "--experimental-strip-types", "server/src/index.ts"]
+CMD [ "npm", "run", "start" ]
