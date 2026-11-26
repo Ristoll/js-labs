@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const WS_URL = 'ws://localhost:3099/ws';
 
-async function connectWebSocket(page: Parameters<typeof test>[0]['page'], name: string) {
+async function connectWebSocket(page: Page, name: string) {
   await page.evaluate(
     ({ url, name }: { url: string; name: string }) => {
       (window as any).__ws = { name, url, messages: [], ws: null as WebSocket | null };
@@ -25,7 +25,7 @@ async function connectWebSocket(page: Parameters<typeof test>[0]['page'], name: 
   );
 }
 
-async function sendMessage(page: Parameters<typeof test>[0]['page'], message: unknown) {
+async function sendMessage(page: Page, message: unknown) {
   await page.evaluate(
     ({ message }: { message: unknown }) => {
       const ws = (window as any).__ws?.ws as WebSocket | null;
@@ -38,12 +38,12 @@ async function sendMessage(page: Parameters<typeof test>[0]['page'], message: un
   );
 }
 
-async function getMessages(page: Parameters<typeof test>[0]['page']) {
+async function getMessages(page: Page) {
   return page.evaluate(() => (window as any).__ws?.messages ?? []);
 }
 
 async function waitForMessage(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   predicate: (m: unknown) => boolean,
   timeoutMs = 5000
 ) {
@@ -85,7 +85,7 @@ test('two players join same room, see roster, observe movement, and exchange cha
     page,
     (m: any) => m.type === 'roster' && m.payload.players.length === 2
   );
-  expect(rosterA.payload.players.length).toBe(2);
+  expect(rosterA.payload.players).toHaveLength(2);
   expect(rosterA.payload.players.map((p: any) => p.name)).toEqual(
     expect.arrayContaining(['Pilot A', 'Pilot B'])
   );
@@ -94,7 +94,7 @@ test('two players join same room, see roster, observe movement, and exchange cha
     pageB,
     (m: any) => m.type === 'roster' && m.payload.players.length === 2
   );
-  expect(rosterB.payload.players.length).toBe(2);
+  expect(rosterB.payload.players).toHaveLength(2);
 
   // Client A thrusts; client B should observe a snapshot within a few seconds.
   await sendMessage(page, {

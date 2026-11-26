@@ -142,8 +142,8 @@ export class Pickup extends Entity {
     y: number | null = null,
     prng: () => number = Math.random
   ): Pickup {
-    const posX = x !== null ? x : 100 + prng() * (arena.width - 200);
-    const posY = y !== null ? y : 100 + prng() * (arena.height - 200);
+    const posX = x ?? 100 + prng() * (arena.width - 200);
+    const posY = y ?? 100 + prng() * (arena.height - 200);
     const type = prng() > 0.5 ? PICKUP_TYPES.SHIELD : PICKUP_TYPES.RAPID_FIRE;
 
     return new Pickup({
