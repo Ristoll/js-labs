@@ -22,6 +22,9 @@ const EnvSchema = z.object({
   RATE_LIMIT_CAPACITY: z.string().optional(),
   RATE_LIMIT_REFILL_RATE: z.string().optional(),
   MAX_BUFFERED_AMOUNT: z.string().optional(),
+  ALLOWED_ORIGINS: z.string().optional(),
+  MAX_CONNECTIONS_PER_IP: z.string().optional(),
+  BUILD_VERSION: z.string().optional(),
 });
 
 type RawEnv = z.infer<typeof EnvSchema>;
@@ -40,6 +43,9 @@ export interface ServerConfig {
   rateLimitCapacity: number;
   rateLimitRefillRate: number;
   maxBufferedAmount: number;
+  allowedOrigins: string[];
+  maxConnectionsPerIp: number;
+  buildVersion: string | null;
 }
 
 function parsePositiveInt(val: string | undefined, name: string, defaultVal: number): number {
@@ -95,6 +101,20 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     1048576
   );
 
+  const allowedOriginsRaw = env.ALLOWED_ORIGINS ?? '*';
+  const allowedOrigins = allowedOriginsRaw
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const maxConnectionsPerIp = parsePositiveInt(
+    env.MAX_CONNECTIONS_PER_IP,
+    'MAX_CONNECTIONS_PER_IP',
+    0
+  );
+
+  const buildVersion = env.BUILD_VERSION ?? null;
+
   return {
     port,
     host,
@@ -109,6 +129,9 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     rateLimitCapacity,
     rateLimitRefillRate,
     maxBufferedAmount,
+    allowedOrigins,
+    maxConnectionsPerIp,
+    buildVersion,
   };
 }
 
